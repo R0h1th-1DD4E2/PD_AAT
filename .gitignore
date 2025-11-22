@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# CocoTB
+results.xml
+sim_build/
+*.vcd
+*.fst
+*.ghw
+dump.vcd
+*.lxt
+*.vpi
+*.vvp
+
+# Simulation files
+*.out
+*.log
+*.jou
+*.pb
+*.wdb
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
