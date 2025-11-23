@@ -20,7 +20,7 @@ module booths_multiplier #(parameter N = 32)(
     
     // Internal registers
     reg signed [N-1:0] M, Q;
-    reg signed [N-1:0] ACC;
+    reg signed [N:0] ACC;
     reg [$clog2(N)-1:0] counter;  // Made wider to avoid overflow
     reg Q_1;
     

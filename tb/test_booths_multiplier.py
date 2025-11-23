@@ -260,16 +260,29 @@ async def booths_multiplier_stress_test(dut):
     # Reset DUT
     await tb.reset()
     
-    # Test alternating patterns
+    # Test alternating patterns (CORRECTED - using signed interpretation)
     dut._log.info("\n--- Pattern Tests ---")
-    await tb.multiply(0x55, 0xAA, "0x55 * 0xAA (alternating bits)")
-    await tb.multiply(0xAA, 0x55, "0xAA * 0x55 (alternating bits)")
-    await tb.multiply(0xFF, 0x01, "0xFF * 0x01 (all 1s * 1)")
-    await tb.multiply(0x01, 0xFF, "0x01 * 0xFF (1 * all 1s)")
+    # 0x55 = 85 (positive), 0xAA as signed = -86
+    await tb.multiply(85, -86, "85 * -86 (0x55 * 0xAA pattern)")
+    await tb.multiply(-86, 85, "-86 * 85 (0xAA * 0x55 pattern)")
+    # 0xFF as signed = -1
+    await tb.multiply(-1, 1, "-1 * 1 (0xFF * 0x01 pattern)")
+    await tb.multiply(1, -1, "1 * -1 (0x01 * 0xFF pattern)")
+    
+    # Additional pattern tests
+    await tb.multiply(127, -1, "127 * -1 (max positive * -1)")
+    await tb.multiply(-128, -1, "-128 * -1 (min negative * -1)")
+    await tb.multiply(64, -2, "64 * -2")
+    await tb.multiply(-64, -2, "-64 * -2")
     
     # Test sequential numbers
     dut._log.info("\n--- Sequential Tests ---")
     for i in range(1, 11):
+        await tb.multiply(i, i, f"{i} * {i}")
+    
+    # Test with negative sequential
+    dut._log.info("\n--- Negative Sequential Tests ---")
+    for i in range(-10, 0):
         await tb.multiply(i, i, f"{i} * {i}")
     
     # Wait
