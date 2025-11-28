@@ -7,11 +7,11 @@ module exp_adder #(
 ) (
     input wire clk, rst_n, start,
     input wire [ES-1:0] exp_A, esp_B,
-    input wire [K_BITS-1:0] k_A, k_B,
+    input wire signed [K_BITS-1:0] k_A, k_B,
     input wire sign_A, sign_B,
     input wire valid_out,
 
-    output reg [MAX_BITS-1:0] exp_raw,
+    output reg [MAX_BITS:0] exp_raw,
     output reg sign_out,
     output reg NaR,
     output reg zero_out,
@@ -21,8 +21,8 @@ module exp_adder #(
 
 // Exponent can be extracted using the formula : E = k*2^ES + e
     // local parameter of maximum exponent value and minimum value
-    localparam EXP_MAX = 29 << ES + (2^ES)-1,
-            EXP_MIN = -31 << ES + 0;
+    localparam signed EXP_MAX = (29 << ES) + ((1 << ES) - 1);
+    localparam signed EXP_MIN = (-31 << ES);
 
     // States 
     parameter IDLE      = 2'b00, 
@@ -34,9 +34,9 @@ module exp_adder #(
     reg [1:0] cur_state, next_state;
 
     // other internal signals
-    reg [MAX_BITS-1:0] exp_A_raw, exp_B_raw;
+    reg signed [MAX_BITS-1:0] exp_A_raw, exp_B_raw;
     reg sign;
-    reg [MAX_BITS-1:0] exp_sum;
+    reg signed [MAX_BITS:0] exp_sum;
 
 
     // State update (Sequential)
@@ -58,41 +58,41 @@ module exp_adder #(
         endcase
     end
 
-    // Datapath logic (Sequential)
-    always @(posedge clk or negedge rst_n) begin
+    // Datapath logic
+    always @(*) begin
         if (!rst_n) begin
-            exp_raw <= 0;
-            sign_out <= 0;
-            NaR <= 0;
-            zero_out <= 0;
-            done <= 0;
+            exp_raw = 0;
+            sign_out = 0;
+            NaR = 0;
+            zero_out = 0;
+            done = 0;
         end 
         else begin
             case (cur_state)
                 IDLE: begin
-                    done <= 0;
-                    NaR <= 0;
-                    zero_out <= 0;
+                    done = 0;
+                    NaR = 0;
+                    zero_out = 0;
                 end
                 INIT: begin
                     // Convert to raw exponent
-                    exp_A_raw <= (k_A << ES) + exp_A;
-                    exp_B_raw <= (k_B << ES) + esp_B;
-                    sign <= sign_A ^ sign_B;
+                    exp_A_raw = (k_A << ES) + exp_A;
+                    exp_B_raw = (k_B << ES) + esp_B;
+                    sign = sign_A ^ sign_B;
                 end
                 ADD_EXP: begin
                     // add the output 
-                    exp_sum <= exp_A_raw + exp_B_raw;
+                    exp_sum = exp_A_raw + exp_B_raw;
                 end
                 DONE: begin
-                    done <= 1;
-                    sign_out <= sign;
-                    exp_raw <= exp_sum;
+                    done = 1;
+                    sign_out = sign;
+                    exp_raw = exp_sum;
                     // Check for NaR and zero conditions
-                    if (exp_raw > EXP_MAX) begin
-                        NaR <= 1;
-                    end else if (exp_raw < EXP_MIN) begin
-                        zero_out <= 1;
+                    if (exp_sum> EXP_MAX) begin
+                        NaR = 1;
+                    end else if (exp_sum < EXP_MIN) begin
+                        zero_out = 1;
                     end
                 end
                 default: ;
