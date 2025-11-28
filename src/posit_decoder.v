@@ -4,8 +4,8 @@
 
 module posit_decoder(
 input [31:0] posit_num,
-input start,clk,rst,
-output reg sign, done,
+input start,clk,rst,received,
+output reg sign, done,ZERO,NAR,
 output  reg signed [5:0] k,//k (regime value) it can take values in the range [-31,30], so 6 bits to represent, k is the run length of regime.
 output reg [2:0] exp_value,
 output reg [31:0] mantissa
@@ -17,10 +17,11 @@ reg [31:0] p_hold;
 parameter start_d=3'd0,sign_d=3'd1,regime_value_d=3'd2,es_value_d=3'd3,mantissa_d=3'd4,complete_d=3'd5;
 
 reg flag1,flag0;
+//reg[5:0] count;
 
-always@(posedge clk)
+always@(posedge clk or negedge rst)// active low reset 
  begin
-if(rst)begin
+if(!rst)begin
                      state <= start_d;
 			            p_hold <=32'd0;
 							flag1<=0;
@@ -29,6 +30,9 @@ if(rst)begin
 							exp_value<=0;
 							mantissa<=0;
 							done<=0;
+							ZERO<=0;
+							NAR<=0;
+							//count<=0;
 
       end
   else begin
@@ -50,7 +54,9 @@ if(rst)begin
 							exp_value<=0;
 							mantissa<=0;
 							done<=0;
-							
+							ZERO<=0;
+							NAR<=0;
+							//count<=0;
 		             end
 		             
 				  end
@@ -69,17 +75,27 @@ if(rst)begin
 									 k<= k+6'd1;
 									 p_hold <= p_hold << 1'b1;
 									 state<=regime_value_d;
+									
+									
 								   
 								  end
 								 
 								 else if(flag1 && !flag0 ) 
 								   begin
-									k<= k-6'd1;
-									flag1<=0;
-									state<=es_value_d;
-									p_hold <= p_hold << 1'b1;
-									
-									end
+									 if(k == 6'd31)
+									    begin
+									       state<=complete_d;
+											 k<= k-6'd1;
+										 end
+									 else
+									   begin
+									   k<= k-6'd1;
+									   flag1<=0;
+									   state<=es_value_d;
+									   p_hold <= p_hold << 1'b1;
+									   end
+								 end 
+								
 									
 								 else // seq of 0's followed by terminating 1
 								    begin
@@ -89,6 +105,13 @@ if(rst)begin
 										  k<= k+6'd1;
 										 p_hold <= p_hold << 1'b1;
 										 state<=regime_value_d;
+									//	 count<=count+1'b1;
+										 if(k==6'd31)// NAR AND  ZERO DECODING 
+									      begin
+									        state<=complete_d;
+											  if(sign) NAR<=1;
+											  else ZERO<=1;
+									      end
 										 end
 									 
 									 else
@@ -120,7 +143,7 @@ if(rst)begin
 					  
 		complete_d:begin
 	               done<=1;
-						state<=start_d;
+						state<=(received)?start_d:complete_d;
 						end
 					   	
 		
