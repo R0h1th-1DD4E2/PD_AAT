@@ -89,11 +89,13 @@ parameter         IDLE     = 2'b00,
             case (current_state)
 
             IDLE: begin
+				   if(start) begin
                scale_out   <= scale_in;
                 mant_adj    <= mant_prod;
                 mant_work   <= mant_prod;
                 shift_amt   <= 0;
                 shift_count <= 0;
+					 end
              //   done        <= 0;
             end
 
@@ -133,8 +135,8 @@ parameter         IDLE     = 2'b00,
             end
 
             DONE_ST: begin
-                mant_adj  <= mant_work;
-                shift_amt <= shift_count;
+//                mant_adj  <= mant_work;
+//                shift_amt <= shift_count;
             //    done      <= 1;
             end
 
