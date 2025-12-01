@@ -1,0 +1,136 @@
+# .github/workflows/verilog-lint.yml
+name: Verilog Linting and Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  verilator-lint:
+    name: Verilator Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Verilator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator
+
+      - name: Run Verilator Lint
+        run: |
+          find src -name "*.v" -exec verilator --lint-only -Wall {} \;
+        continue-on-error: false
+
+  verible-lint:
+    name: Verible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Verible
+        run: |
+          wget https://github.com/chipsalliance/verible/releases/download/v0.0-3644-g6882622e/verible-v0.0-3644-g6882622e-linux-static-x86_64.tar.gz
+          tar -xzf verible-v0.0-3644-g6882622e-linux-static-x86_64.tar.gz
+          echo "$PWD/verible-v0.0-3644-g6882622e/bin" >> $GITHUB_PATH
+
+      - name: Run Verible Lint
+        run: |
+          verible-verilog-lint --rules_config .verible.rules src/*.v
+
+      - name: Run Verible Format Check
+        run: |
+          verible-verilog-format --verify src/*.v
+
+  svlint:
+    name: SVLint Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install svlint
+        run: cargo install svlint
+
+      - name: Run svlint
+        run: |
+          svlint src/*.v
+
+  iverilog-compile:
+    name: Icarus Verilog Compile Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Icarus Verilog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog
+
+      - name: Compile with iverilog
+        run: |
+          for file in src/*.v; do
+            iverilog -g2012 -o /dev/null "$file" || exit 1
+          done
+
+#   cocotb-tests:
+#     name: CocoTB Tests
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.10'
+
+#       - name: Install dependencies
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y iverilog
+#           cd tb
+#           pip install -r requirements.txt
+
+#       - name: Run CocoTB tests
+#         run: |
+#           cd tb
+#           make
+
+#       - name: Upload test results
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: test-results
+#           path: |
+#             tb/results.xml
+#             tb/*.vcd
+
+  lint-summary:
+    name: Lint Summary
+    runs-on: ubuntu-latest
+    needs: [verilator-lint, verible-lint, svlint, iverilog-compile]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "All linting and testing completed"
+          if [ "${{ needs.verilator-lint.result }}" != "success" ] || \
+             [ "${{ needs.verible-lint.result }}" != "success" ] || \
+             [ "${{ needs.svlint.result }}" != "success" ] || \
+             [ "${{ needs.iverilog-compile.result }}" != "success" ]; then
+            echo "Some checks failed!"
+            exit 1
+          fi
