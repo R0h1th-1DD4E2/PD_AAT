@@ -1,203 +1,132 @@
-
-
-
-
-module posit_decoder(
-input [31:0] posit_num,
-input start,clk,rst,received,
-output reg sign, done,ZERO,NAR,
-output  reg signed [5:0] k,//k (regime value) it can take values in the range [-31,30], so 6 bits to represent, k is the run length of regime.
-output reg [2:0] exp_value,
-output reg [31:0] mantissa
+module posit_decoder (
+	input  [31:0] posit_num,
+	input         start,
+	input         clk,
+	input         rst,
+	input         received,
+	output reg    sign,
+	output reg    done,
+	output reg    ZERO,
+	output reg    NAR,
+	output reg signed [5:0] k,       // Regime value k ∈ [-31, 30]
+	output reg [2:0] exp_value,
+	output reg [31:0] mantissa
 );
 
-
-reg [2:0] state;
+reg [2:0]  state;
 reg [31:0] p_hold;
-parameter start_d=3'd0,sign_d=3'd1,regime_value_d=3'd2,es_value_d=3'd3,mantissa_d=3'd4,complete_d=3'd5;
 
-reg flag1,flag0;
-//reg[5:0] count;
+parameter start_d         = 3'd0;
+parameter sign_d          = 3'd1;
+parameter regime_value_d  = 3'd2;
+parameter es_value_d      = 3'd3;
+parameter mantissa_d      = 3'd4;
+parameter complete_d      = 3'd5;
 
-always@(posedge clk or negedge rst)// active low reset 
- begin
-if(!rst)begin
-                     state <= start_d;
-			            p_hold <=32'd0;
-							flag1<=0;
-							flag0<=0;
-							k<=0;
-							exp_value<=0;
-							mantissa<=0;
-							done<=0;
-							ZERO<=0;
-							NAR<=0;
-							//count<=0;
+reg flag1, flag0;
+// reg [5:0] count;
 
-      end
-  else begin
-  case(state)
-    start_d: begin
-					 if(start)
-                   begin
-                     p_hold <= posit_num;
-							state <= sign_d;
-						 end
-		 
-	             else 
-	                begin
-		               state <= start_d;
-			            p_hold <=32'd0;
-							flag1<=0;
-							flag0<=0;
-							k<=0;
-							exp_value<=0;
-							mantissa<=0;
-							done<=0;
-							ZERO<=0;
-							NAR<=0;
-							//count<=0;
-		             end
-		             
-				  end
-	 
-	 sign_d: begin
-	           sign <= p_hold[31];
-				  p_hold <= p_hold << 1'b1;
-				  state <= regime_value_d;
-				  
-	         end
-	  
-	 regime_value_d: begin
-	                     if(p_hold[31] && !flag0)// seq of 1's followed by terminating 0
-								  begin
-								    flag1<=1;
-									 k<= k+6'd1;
-									 p_hold <= p_hold << 1'b1;
-									 state<=regime_value_d;
-									
-									
-								   
-								  end
-								 
-								 else if(flag1 && !flag0 ) 
-								   begin
-									 if(k == 6'd31)
-									    begin
-									       state<=complete_d;
-											 k<= k-6'd1;
-										 end
-									 else
-									   begin
-									   k<= k-6'd1;
-									   flag1<=0;
-									   state<=es_value_d;
-									   p_hold <= p_hold << 1'b1;
-									   end
-								 end 
-								
-									
-								 else // seq of 0's followed by terminating 1
-								    begin
-									 if( !p_hold[31] )
-									    begin
-										 flag0<=1;
-										  k<= k+6'd1;
-										 p_hold <= p_hold << 1'b1;
-										 state<=regime_value_d;
-									//	 count<=count+1'b1;
-										 if(k==6'd31)// NAR AND  ZERO DECODING 
-									      begin
-									        state<=complete_d;
-											  if(sign) NAR<=1;
-											  else ZERO<=1;
-									      end
-										 end
-									 
-									 else
-									    begin
-									    k<= -k;//
-										 state<= es_value_d;
-										 flag0<=0;
-										 p_hold <= p_hold << 1'b1;
-										 end
+always @(posedge clk or negedge rst) begin // active low reset
+	if (!rst) begin
+		state     <= start_d;
+		p_hold    <= 32'd0;
+		flag1     <= 1'b0;
+		flag0     <= 1'b0;
+		k         <= 6'd0;
+		exp_value <= 3'd0;
+		mantissa  <= 32'd0;
+		done      <= 1'b0;
+		ZERO      <= 1'b0;
+		NAR       <= 1'b0;
+		// count     <= 6'd0;
+	end else begin
+		case (state)
+			start_d: begin
+				if (start) begin
+					p_hold <= posit_num;
+					state  <= sign_d;
+				end else begin
+					state     <= start_d;
+					p_hold    <= 32'd0;
+					flag1     <= 1'b0;
+					flag0     <= 1'b0;
+					k         <= 6'd0;
+					exp_value <= 3'd0;
+					mantissa  <= 32'd0;
+					done      <= 1'b0;
+					ZERO      <= 1'b0;
+					NAR       <= 1'b0;
+					// count     <= 6'd0;
+				end
+			end
 
-									 
-									 end
-								  
-	                  end
-				
-					 
-		es_value_d: begin
-		               exp_value<=p_hold[31:29];
-							p_hold <= p_hold << 2'd3;
-							state<= mantissa_d;
-		
-                  end	
-						
-	   mantissa_d:begin
-		            mantissa<={1'b1,p_hold[31:1]};
+			sign_d: begin
+				sign   <= p_hold[31];
+				p_hold <= p_hold << 1'b1;
+				state  <= regime_value_d;
+			end
+
+			regime_value_d: begin
+				// Sequence of 1's followed by terminating 0
+				if (p_hold[31] && !flag0) begin
+					flag1 <= 1'b1;
+					k     <= k + 6'd1;
+					p_hold <= p_hold << 1'b1;
+					state  <= regime_value_d;
+				end else if (flag1 && !flag0) begin
+					if (k == 6'd31) begin
 						state <= complete_d;
-						
-	              end
-					  
-		complete_d:begin
-	               done<=1;
-						state<=(received)?start_d:complete_d;
-						end
-					   	
-		
-		
-		
-	  default: begin
-	            state <= start_d;
-					done <= 0;
+						k     <= k - 6'd1;
+					end else begin
+						k      <= k - 6'd1;
+						flag1  <= 1'b0;
+						state  <= es_value_d;
+						p_hold <= p_hold << 1'b1;
 					end
-	
-  endcase
-  
+				end else begin
+					// Sequence of 0's followed by terminating 1
+					if (!p_hold[31]) begin
+						flag0  <= 1'b1;
+						k      <= k + 6'd1;
+						p_hold <= p_hold << 1'b1;
+						state  <= regime_value_d;
+						// count  <= count + 1'b1;
+						if (k == 6'd31) begin // NAR and ZERO decoding
+							state <= complete_d;
+							if (sign) NAR <= 1'b1;
+							else      ZERO <= 1'b1;
+						end
+					end else begin
+						k      <= -k;
+						state  <= es_value_d;
+						flag0  <= 1'b0;
+						p_hold <= p_hold << 1'b1;
+					end
+				end
+			end
 
- end
+			es_value_d: begin
+				exp_value <= p_hold[31:29];
+				p_hold    <= p_hold << 3;
+				state     <= mantissa_d;
+			end
+
+			mantissa_d: begin
+				mantissa <= {1'b1, p_hold[31:1]};
+				state    <= complete_d;
+			end
+
+			complete_d: begin
+				done  <= 1'b1;
+				state <= (received) ? start_d : complete_d;
+			end
+
+			default: begin
+				state <= start_d;
+				done  <= 1'b0;
+			end
+		endcase
+	end
 end
- 
- endmodule
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
+
+endmodule
