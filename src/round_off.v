@@ -1,17 +1,31 @@
 module round_off(
-  input wire [63:0]shifted_mantissa,
-  input wire k_out,
-  output reg mantissa_out
+    input  wire [63:0] shifted_mantissa,
+    input  wire signed [7:0] k_out,      // must be wider & signed
+    output reg  [31:0] mantissa_out
 );
 
-reg int no_bt;
-  
-  always@()
-  begin
-    if(k_out >= 0)
-      no_bt  = 32-1-(k_out+2)-3;
-    else
-      no_bt  = 32-1-((-k_out)+2)-3;
-  end 
-  
-  assign mantissa_out = { data_in[63:(63-no_bt+1)], 9'b0 };
+    int bt;
+
+    //  initialization
+    initial begin
+        mantissa_out = 32'b0;
+    end
+
+    // compute  of number of bits
+    always @(*) begin
+        if (k_out >= 0)
+            bt = 32 - 1 - (k_out + 2) - 3;
+        else
+            bt = 32 - 1 - ((-k_out) + 2) - 3;
+    end
+
+    // extract 'bt' number of  bits into MSB side of mantissa_out
+    always @(*) begin
+        mantissa_out = 32'b0;
+
+        if (bt > 0 && bt <= 32) begin
+            mantissa_out[31 : (32 - bt)] = shifted_mantissa[63 : (64 - bt)];
+        end
+    end
+
+endmodule
