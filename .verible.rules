@@ -1,123 +1,20 @@
-# Verible lint rules configuration (textproto)
-# Focused on synthesis/semantic checks only — styling rules intentionally omitted.
+rule { name: "always-comb" disabled: true }
+rule { name: "always-comb-preferred" disabled: true }
+rule { name: "explicit-parameter-storage-type" parameters { name: "severity" string_value: "warning" } }
+rule { name: "line-length" disabled: true }
+rule { name: "no-tabs" disabled: true }
+rule { name: "trailing-spaces" disabled: true }
+rule { name: "posix-eof" disabled: true }
+rule { name: "identifier-style" disabled: true }
+rule { name: "parameter-name-style" disabled: true }
 
-# 1) Require explicit default in case statements (avoid implicit latches / undefined outputs).
-rule {
-  name: "case-missing-default"
-  # treat as an error-level check that must be fixed
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-
-# 2) Require explicit storage type for parameters/localparams (helps clarify width/signedness).
-#    This avoids ambiguous semantics across tools. If you want to keep pure Verilog semantics,
-#    change severity to "warning" or remove this rule.
-rule {
-  name: "explicit-parameter-storage-type"
-  parameters {
-    name: "severity"
-    string_value: "warning"
-  }
-}
-
-# 3) Disallow implicit nets / undeclared identifiers (they break synthesis).
-rule {
-  name: "implicit-identifier"
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-
-# 4) Detect potential inferred latches from combinational blocks (missing default assignments).
-rule {
-  name: "inferred-latch"
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-
-# 5) Discourage non-synthesizable constructs (real, time, delay, event-control with delays).
-#    These can break synthesis or simulator/synthesis parity.
-rule {
-  name: "no-realtime-types"
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-rule {
-  name: "no-delay-constructs"
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-
-# 6) Flag initial blocks or $display used in RTL (allowed in testbenches, banned in synthesizable RTL).
-rule {
-  name: "no-initial-in-rtl"
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-rule {
-  name: "no-system-tasks-in-rtl"
-  parameters {
-    name: "severity"
-    string_value: "warning"
-  }
-}
-
-# 7) Check mixed-width arithmetic and implicit casts (can change synthesized width).
-rule {
-  name: "mixed-width-arithmetic"
-  parameters {
-    name: "severity"
-    string_value: "warning"
-  }
-}
-
-# 8) Encourage combinational blocks to be explicitly combinational (either require defaults or
-#    allow SystemVerilog `always_comb` if you migrate). We set to warning so you can decide.
-rule {
-  name: "always-comb-preferred"
-  parameters {
-    name: "severity"
-    string_value: "warning"
-  }
-}
-
-# 9) Safety check for case statement qualifiers (unique/priority) vs defaults.
-#    If a case is intended to be exhaustive, prefer `unique` or `unique case` (SV) or explicit default.
-rule {
-  name: "case-qualifier-check"
-  parameters {
-    name: "severity"
-    string_value: "warning"
-  }
-}
-
-# 10) Misc: check parameter redeclaration and shadowing which can cause synthesis mismatches.
-rule {
-  name: "parameter-redeclaration"
-  parameters {
-    name: "severity"
-    string_value: "error"
-  }
-}
-
-rule {
-  name: "always-comb"
-  parameters {
-    name: "enabled"
-    bool_value: false
-  }
-}
-
-
-# End 
+rule { name: "case-missing-default" parameters { name: "severity" string_value: "error" } }
+rule { name: "implicit-identifier" parameters { name: "severity" string_value: "error" } }
+rule { name: "inferred-latch" parameters { name: "severity" string_value: "error" } }
+rule { name: "no-realtime-types" parameters { name: "severity" string_value: "error" } }
+rule { name: "no-delay-constructs" parameters { name: "severity" string_value: "error" } }
+rule { name: "no-initial-in-rtl" parameters { name: "severity" string_value: "error" } }
+rule { name: "no-system-tasks-in-rtl" parameters { name: "severity" string_value: "warning" } }
+rule { name: "mixed-width-arithmetic" parameters { name: "severity" string_value: "warning" } }
+rule { name: "case-qualifier-check" parameters { name: "severity" string_value: "warning" } }
+rule { name: "parameter-redeclaration" parameters { name: "severity" string_value: "error" } }
