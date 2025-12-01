@@ -1,4 +1,4 @@
-module round_off_fsm (
+module round_off (
     input  wire        clk,
     input  wire        rst,
     input  wire        start,
@@ -77,7 +77,7 @@ module round_off_fsm (
                     ext          <= shifted_mantissa[61:30];
 
                     // mantissa_out = ext AND mask
-                    mantissa_out <= ext && temp ;
+                    mantissa_out <= ext & temp ;
                 end
 
                 COMPLETE: begin
