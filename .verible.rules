@@ -113,7 +113,11 @@ rule {
 
 rule {
   name: "always-comb"
-  disabled: true
+  parameters {
+    name: "enabled"
+    bool_value: false
+  }
 }
+
 
 # End 
