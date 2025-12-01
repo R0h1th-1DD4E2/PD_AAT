@@ -83,6 +83,11 @@ module round_off (
                 COMPLETE: begin
                     done <= 1'b1;                     // signal computation done
                 end
+
+                default: begin
+                    mantissa_out <= mantissa_out;
+                    done         <= 1'b0;
+                end
             endcase
         end
     end

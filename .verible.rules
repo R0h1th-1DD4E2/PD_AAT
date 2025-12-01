@@ -1,37 +1,114 @@
 # Verible lint rules configuration (textproto)
-# This is a minimal, non-strict ruleset that enables a few common checks
-# while otherwise deferring to Verible's defaults. Adjust values as needed.
-#
-# Note: Verible accepts a textproto-style rules config. The exact schema is
-# defined by Verible. This file provides a small, commonly-used subset of
-# checks (line length, no tabs, and simple naming hints). If Verible reports
-# any parsing errors, we can iterate quickly to adapt this file to the
-# installed Verible version.
+# Focused on synthesis/semantic checks only — styling rules intentionally omitted.
 
-# Maximum line length (soft limit). Set to 120 to avoid noisy CI failures.
+# 1) Require explicit default in case statements (avoid implicit latches / undefined outputs).
 rule {
-  name: "LineLength"
+  name: "case-missing-default"
+  # treat as an error-level check that must be fixed
   parameters {
-    name: "max_length"
-    int_value: 120
+    name: "severity"
+    string_value: "error"
   }
 }
 
-# Disallow tabs — prefer spaces for indentation.
+# 2) Require explicit storage type for parameters/localparams (helps clarify width/signedness).
+#    This avoids ambiguous semantics across tools. If you want to keep pure Verilog semantics,
+#    change severity to "warning" or remove this rule.
 rule {
-  name: "NoTabs"
-}
-
-# Encourage module and file naming in lower_snake_case (non-strict hint).
-rule {
-  name: "IdentifierStyle"
+  name: "explicit-parameter-storage-type"
   parameters {
-    name: "style"
-    string_value: "lower_snake_case"
+    name: "severity"
+    string_value: "warning"
   }
 }
 
-# Do not enable very strict checks by default. Add more `rule { ... }`
-# blocks above to harden style enforcement when you're ready.
+# 3) Disallow implicit nets / undeclared identifiers (they break synthesis).
+rule {
+  name: "implicit-identifier"
+  parameters {
+    name: "severity"
+    string_value: "error"
+  }
+}
 
-# End of .verible.rules
+# 4) Detect potential inferred latches from combinational blocks (missing default assignments).
+rule {
+  name: "inferred-latch"
+  parameters {
+    name: "severity"
+    string_value: "error"
+  }
+}
+
+# 5) Discourage non-synthesizable constructs (real, time, delay, event-control with delays).
+#    These can break synthesis or simulator/synthesis parity.
+rule {
+  name: "no-realtime-types"
+  parameters {
+    name: "severity"
+    string_value: "error"
+  }
+}
+rule {
+  name: "no-delay-constructs"
+  parameters {
+    name: "severity"
+    string_value: "error"
+  }
+}
+
+# 6) Flag initial blocks or $display used in RTL (allowed in testbenches, banned in synthesizable RTL).
+rule {
+  name: "no-initial-in-rtl"
+  parameters {
+    name: "severity"
+    string_value: "error"
+  }
+}
+rule {
+  name: "no-system-tasks-in-rtl"
+  parameters {
+    name: "severity"
+    string_value: "warning"
+  }
+}
+
+# 7) Check mixed-width arithmetic and implicit casts (can change synthesized width).
+rule {
+  name: "mixed-width-arithmetic"
+  parameters {
+    name: "severity"
+    string_value: "warning"
+  }
+}
+
+# 8) Encourage combinational blocks to be explicitly combinational (either require defaults or
+#    allow SystemVerilog `always_comb` if you migrate). We set to warning so you can decide.
+rule {
+  name: "always-comb-preferred"
+  parameters {
+    name: "severity"
+    string_value: "warning"
+  }
+}
+
+# 9) Safety check for case statement qualifiers (unique/priority) vs defaults.
+#    If a case is intended to be exhaustive, prefer `unique` or `unique case` (SV) or explicit default.
+rule {
+  name: "case-qualifier-check"
+  parameters {
+    name: "severity"
+    string_value: "warning"
+  }
+}
+
+# 10) Misc: check parameter redeclaration and shadowing which can cause synthesis mismatches.
+rule {
+  name: "parameter-redeclaration"
+  parameters {
+    name: "severity"
+    string_value: "error"
+  }
+}
+
+# End of conservative semantic-focused ruleset.
