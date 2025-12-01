@@ -25,6 +25,7 @@ dump.vcd
 *.jou
 *.pb
 *.wdb
+*.vvp
 
 # Editor files
 .vscode/
