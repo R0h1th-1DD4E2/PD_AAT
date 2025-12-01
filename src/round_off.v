@@ -4,7 +4,7 @@ module round_off(
     output reg  [31:0] mantissa_out
 );
 
-    int bt;
+    reg bt;
 
     //  initialization
     initial begin
