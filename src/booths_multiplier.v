@@ -69,7 +69,6 @@ module booths_multiplier #(parameter N = 32)(
             case (cur_state)
                 IDLE: begin
                     done <= 0;
-                    C <= 0;
                 end
                 INIT: begin
                     M <= A;
@@ -93,15 +92,7 @@ module booths_multiplier #(parameter N = 32)(
                     C <= {ACC[N-1:0], Q};
                     done <= 1;
                 end
-                default: begin
-                    M <= 0;
-                    Q <= 0;
-                    ACC <= 0;
-                    Q_1 <= 0;
-                    counter <= 0;
-                    C <= 0;
-                    done <= 0;
-                end
+                default: ;
             endcase
         end 
     end

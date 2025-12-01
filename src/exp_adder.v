@@ -6,7 +6,7 @@ module exp_adder #(
             MAX_BITS = ES + K_BITS
 ) (
     input wire clk, rst_n, start,
-    input wire [ES-1:0] exp_A, esp_B,
+    input wire [ES-1:0] exp_A, exp_B,
     input wire signed [K_BITS-1:0] k_A, k_B,
     input wire sign_A, sign_B,
     input wire valid_out,
@@ -59,40 +59,40 @@ module exp_adder #(
     end
 
     // Datapath logic
-    always @(*) begin
+    always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            exp_raw = 0;
-            sign_out = 0;
-            NaR = 0;
-            zero_out = 0;
-            done = 0;
+            exp_raw <= 0;
+            sign_out <= 0;
+            NaR <= 0;
+            zero_out <= 0;
+            done <= 0;
         end 
         else begin
             case (cur_state)
                 IDLE: begin
-                    done = 0;
-                    NaR = 0;
-                    zero_out = 0;
+                    done <= 0;
+                    NaR <= 0;
+                    zero_out <= 0;
                 end
                 INIT: begin
                     // Convert to raw exponent
-                    exp_A_raw = (k_A << ES) + exp_A;
-                    exp_B_raw = (k_B << ES) + esp_B;
-                    sign = sign_A ^ sign_B;
+                    exp_A_raw <= (k_A << ES) + exp_A;
+                    exp_B_raw <= (k_B << ES) + exp_B;
+                    sign <= sign_A ^ sign_B;
                 end
                 ADD_EXP: begin
                     // add the output 
-                    exp_sum = exp_A_raw + exp_B_raw;
+                    exp_sum <= exp_A_raw + exp_B_raw;
                 end
                 DONE: begin
-                    done = 1;
-                    sign_out = sign;
-                    exp_raw = exp_sum;
+                    done <= 1;
+                    sign_out <= sign;
+                    exp_raw <= exp_sum;
                     // Check for NaR and zero conditions
                     if (exp_sum> EXP_MAX) begin
-                        NaR = 1;
+                        NaR <= 1;
                     end else if (exp_sum < EXP_MIN) begin
-                        zero_out = 1;
+                        zero_out <= 1;
                     end
                 end
                 default: ;
