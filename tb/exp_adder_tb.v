@@ -12,7 +12,6 @@ reg clk, rst_n, start;
 reg [ES-1:0] exp_A, exp_B;
 reg [K_BITS-1:0] k_A, k_B;
 reg sign_A, sign_B;
-reg valid_out;
 wire [MAX_BITS:0] exp_raw;
 wire sign_out;
 wire NaR;
@@ -33,12 +32,11 @@ exp_adder #(
     .rst_n(rst_n),
     .start(start),
     .exp_A(exp_A),
-    .esp_B(exp_B),  // Note: typo in original module
+    .exp_B(exp_B),  // Note: typo in original module
     .k_A(k_A),
     .k_B(k_B),
     .sign_A(sign_A),
     .sign_B(sign_B),
-    .valid_out(valid_out),
     .exp_raw(exp_raw),
     .sign_out(sign_out),
     .NaR(NaR),
@@ -63,7 +61,6 @@ initial begin
     k_B = 0;
     sign_A = 0;
     sign_B = 0;
-    valid_out = 0;
     test_num = 0;
     
     // Display header
@@ -187,19 +184,25 @@ task run_test;
             $display("  Result: MISMATCH! Expected %0d, Got %0d", 
                      exp_sum_expected, $signed(exp_raw));
         end
-        
-        // Clear valid_out to return to IDLE
-        valid_out = 1;
-        @(posedge clk);
-        valid_out = 0;
-        @(posedge clk);
+
     end
 endtask
 
 // Monitor for debugging (optional)
 initial begin
-    $monitor("Time=%0t: State=%0d, done=%b, exp_raw=%0d, NaR=%b, zero=%b", 
-             $time, dut.cur_state, done, $signed(exp_raw), NaR, zero_out);
+end
+
+// $monitor only accepts simple signals or constant expressions.
+// Create intermediate nets and pass them to $monitor to avoid vvp errors.
+wire [1:0] dut_state;
+wire signed [MAX_BITS:0] exp_raw_signed;
+
+assign dut_state = dut.cur_state;
+assign exp_raw_signed = exp_raw;
+
+initial begin
+    $monitor("Time=%0t: State=%0d, done=%b, exp_raw=%0d, NaR=%b, zero=%b",
+             $time, dut_state, done, exp_raw_signed, NaR, zero_out);
 end
 
 // Waveform dump (for viewing in waveform viewer)

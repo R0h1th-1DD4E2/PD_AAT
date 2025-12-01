@@ -14,6 +14,10 @@ PYTHON = $(VENV_DIR)/bin/python3
 PIP = $(VENV_DIR)/bin/pip
 ACTIVATE = . $(VENV_DIR)/bin/activate
 
+# Path variables
+SRC_DIR = ../src
+TB = .
+
 # Check if running in virtual environment
 ifndef VIRTUAL_ENV
     RUN_IN_VENV = $(ACTIVATE) &&
@@ -56,6 +60,13 @@ booths:
 		VERILOG_SOURCES="../src/booths_multiplier.v booths_multiplier_tb_top.v" \
 		TOPLEVEL=booths_multiplier_tb_top \
 		MODULE=test_booths_multiplier
+
+# exp_adder testbench
+.PHONY: exp_adder
+exp_adder:
+	@echo "Running Exponent Adder tests..."
+	iverilog -g2012 -o exp_adder_tb.vvp $(SRC_DIR)/exp_adder.v $(TB)/exp_adder_tb.v
+	vvp exp_adder_tb.vvp
 
 # Run all tests
 .PHONY: test-all
