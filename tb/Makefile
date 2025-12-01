@@ -68,6 +68,13 @@ exp_adder:
 	iverilog -g2012 -o exp_adder_tb.vvp $(SRC_DIR)/exp_adder.v $(TB)/exp_adder_tb.v
 	vvp exp_adder_tb.vvp
 
+# POSIT decoder testbench
+.PHONY: posit_decode
+posit_decode:
+	@echo "Running Posit Decoder tests..."
+	iverilog -g2012 -o posit_decoder_tb.vvp $(SRC_DIR)/posit_decoder.v $(TB)/posit_decoder_tb.v
+	vvp posit_decoder_tb.vvp
+
 # Run all tests
 .PHONY: test-all
 test-all: booths

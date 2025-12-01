@@ -1,6 +1,6 @@
 module adjustment (
     input                      clk,
-    input                      reset,
+    input                      rst_n,
     input                      start,
     input      [9:0]           scale_in,
     input      [63:0]          mant_prod,
@@ -25,8 +25,8 @@ parameter IDLE     = 2'b00,
 
 reg [1:0] current_state, next_state;
 
-always @(posedge clk) begin
-    if (reset)
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
         current_state <= IDLE;
     else
         current_state <= next_state;
@@ -58,8 +58,8 @@ always @(*) begin
     endcase
 end
 
-always @(posedge clk) begin
-    if (reset) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         scale_out   <= 0;
         mant_adj    <= 0;
         shift_amt   <= 0;
