@@ -21,7 +21,7 @@ jobs:
             verilator git wget tar gzip ca-certificates
           verilator --version
 
-      - name: Install Verible (verible-verilog-lint / verible-verilog-format) (fallback download)
+      - name: Install Verible (verible-verilog-lint / verible-verilog-format)
         run: |
           VERIBLE_VERSION="v0.0-4023-gc1271a00"
           wget https://github.com/chipsalliance/verible/releases/download/${VERIBLE_VERSION}/verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
@@ -38,26 +38,6 @@ jobs:
             exit 1
           fi
 
-      - name: Run Verible lint (style & formatting checks)
-        id: verible
-        run: |
-          FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
-          # run verible format as a safety check (non-fatal), then lint strictly
-          if command -v verible-verilog-format >/dev/null 2>&1; then
-            echo "Running verible-verilog-format (in-place) on src/ files..."
-            verible-verilog-format --in_place $FILES || true
-          else
-            echo "verible-verilog-format not available; skipping format."
-          fi
-          if command -v verible-verilog-lint >/dev/null 2>&1; then
-            echo "Running verible-verilog-lint on src/ files..."
-            verible-verilog-lint $FILES
-          else
-            echo "verible-verilog-lint not available; skipping verible lint."
-            # If you want this to fail when verible is missing, replace the line above with:
-            # exit 1
-          fi
-
       - name: Run Verilator lint-only (semantic checks)
         id: verilator
         run: |
@@ -65,6 +45,36 @@ jobs:
           # -Wall is strict; add -Wno-<name> to silence known noisy warnings
           echo "Running: verilator --lint-only -Wall -Isrc $FILES"
           verilator --lint-only -Wall -Isrc $FILES
+
+      - name: Run Verible lint (style & formatting checks)
+        id: verible
+        run: |
+          FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
+          
+          # Run verible format as a safety check (non-fatal)
+          if command -v verible-verilog-format >/dev/null 2>&1; then
+            echo "Running verible-verilog-format (in-place) on src/ files..."
+            verible-verilog-format --inplace $FILES || true
+          else
+            echo "verible-verilog-format not available; skipping format."
+          fi
+          
+          # Run verible lint with rules config
+          if command -v verible-verilog-lint >/dev/null 2>&1; then
+            echo "Running verible-verilog-lint on src/ files..."
+            # Check if rules config file exists
+            if [ -f ".verible.rules" ]; then
+              echo "Using .verible.rules configuration file"
+              verible-verilog-lint --rules_config=.verible.rules $FILES
+            else
+              echo "Warning: .verible.rules not found, running with default rules"
+              verible-verilog-lint $FILES
+            fi
+          else
+            echo "verible-verilog-lint not available; skipping verible lint."
+            # If you want this to fail when verible is missing, replace the line above with:
+            # exit 1
+          fi
 
       - name: Upload lint artifacts
         if: always()
