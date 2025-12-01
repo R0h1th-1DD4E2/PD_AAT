@@ -1,6 +1,6 @@
 module round_off (
     input  wire        clk,
-    input  wire        rst,
+    input  wire        rst_n,
     input  wire        start,
     input  wire [63:0] shifted_mantissa,
     input  wire [5:0]  k_out,
@@ -31,8 +31,8 @@ module round_off (
     assign k_abs  = k_sign ? (~k_out + 6'd1) : k_out;
 
     // FSM sequential logic
-    always @(posedge clk) begin
-        if (rst)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
             current_state <= IDLE;
         else
             current_state <= next_state;
@@ -50,8 +50,8 @@ module round_off (
     end
 
     // FSM output and internal logic
-    always @(posedge clk) begin
-        if (rst) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             mantissa_out <= 32'b0;
             temp         <= 32'b0;
             nbt          <= 6'd0;
