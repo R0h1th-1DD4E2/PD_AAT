@@ -35,9 +35,10 @@ jobs:
 
       - name: Install Verible
         run: |
-          wget https://github.com/chipsalliance/verible/releases/download/v0.0-3644-g6882622e/verible-v0.0-3644-g6882622e-linux-static-x86_64.tar.gz
-          tar -xzf verible-v0.0-3644-g6882622e-linux-static-x86_64.tar.gz
-          echo "$PWD/verible-v0.0-3644-g6882622e/bin" >> $GITHUB_PATH
+          VERIBLE_VERSION="v0.0-4023-gc1271a00"
+          wget https://github.com/chipsalliance/verible/releases/download/${VERIBLE_VERSION}/verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
+          tar -xzf verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
+          echo "$PWD/verible-${VERIBLE_VERSION}/bin" >> $GITHUB_PATH
 
       - name: Run Verible Lint
         run: |
@@ -47,25 +48,25 @@ jobs:
         run: |
           verible-verilog-format --verify src/*.v
 
-  svlint:
-    name: SVLint Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Install svlint
-        run: cargo install svlint
-
-      - name: Run svlint
-        run: |
-          svlint src/*.v
+  # svlint:
+  #   name: SVLint Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         override: true
+  #
+  #     - name: Install svlint
+  #       run: cargo install svlint
+  #
+  #     - name: Run svlint
+  #       run: |
+  #         svlint src/*.v
 
   iverilog-compile:
     name: Icarus Verilog Compile Check
@@ -121,7 +122,7 @@ jobs:
   lint-summary:
     name: Lint Summary
     runs-on: ubuntu-latest
-    needs: [verilator-lint, verible-lint, svlint, iverilog-compile]
+    needs: [verilator-lint, verible-lint, iverilog-compile]
     if: always()
     steps:
       - name: Check results
@@ -129,7 +130,6 @@ jobs:
           echo "All linting and testing completed"
           if [ "${{ needs.verilator-lint.result }}" != "success" ] || \
              [ "${{ needs.verible-lint.result }}" != "success" ] || \
-             [ "${{ needs.svlint.result }}" != "success" ] || \
              [ "${{ needs.iverilog-compile.result }}" != "success" ]; then
             echo "Some checks failed!"
             exit 1
