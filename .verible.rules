@@ -1,0 +1,37 @@
+# Verible lint rules configuration (textproto)
+# This is a minimal, non-strict ruleset that enables a few common checks
+# while otherwise deferring to Verible's defaults. Adjust values as needed.
+#
+# Note: Verible accepts a textproto-style rules config. The exact schema is
+# defined by Verible. This file provides a small, commonly-used subset of
+# checks (line length, no tabs, and simple naming hints). If Verible reports
+# any parsing errors, we can iterate quickly to adapt this file to the
+# installed Verible version.
+
+# Maximum line length (soft limit). Set to 120 to avoid noisy CI failures.
+rule {
+  name: "LineLength"
+  parameters {
+    name: "max_length"
+    int_value: 120
+  }
+}
+
+# Disallow tabs — prefer spaces for indentation.
+rule {
+  name: "NoTabs"
+}
+
+# Encourage module and file naming in lower_snake_case (non-strict hint).
+rule {
+  name: "IdentifierStyle"
+  parameters {
+    name: "style"
+    string_value: "lower_snake_case"
+  }
+}
+
+# Do not enable very strict checks by default. Add more `rule { ... }`
+# blocks above to harden style enforcement when you're ready.
+
+# End of .verible.rules
