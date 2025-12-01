@@ -9,17 +9,15 @@ module adjustment (
     output reg [63:0]          mant_adj,
     output reg [63:0]          shift_amt,
     output     reg             done,
-    output      [2:0]          adj_exp,
-    output      [5:0]          adj_regime,
-    output                     exp_sign
+    output reg      [2:0]          adj_exp,
+    output reg    [5:0]          adj_regime,
+    output reg                    exp_sign
 );
 
     reg [63:0] mant_work;
     reg [63:0] shift_count;
 
-assign adj_exp    = done ? scale_out[2:0]   : adj_exp;
-assign adj_regime = done ? scale_out[8:3]   : adj_regime;
-assign exp_sign   = done ? scale_out[9]     : exp_sign;
+
 
 parameter IDLE     = 2'b00,
           SHIFTING = 2'b01,
@@ -79,31 +77,34 @@ always @(posedge clk) begin
                 mant_work   <= mant_prod;
                 shift_amt   <= 0;
                 shift_count <= 0;
+					 adj_exp    <= 0 ;
+					 adj_regime  <= 0 ;
+					 exp_sign   <= 0 ;
             end
         end
 
         SHIFTING: begin
             case (mant_work[63:62])
 
-                2'b11: begin
+                2'b11,2'b10: begin
                     mant_work   <= mant_work >> 1;
                     scale_out   <= scale_out + 10'd1;
-                    shift_amt   <= 1;
+                    shift_count   <= shift_count + 64'd1;
                 end
 
-                2'b10: begin
-                    mant_work   <= mant_work >> 1;
-                    scale_out   <= scale_out + 10'd1;
-                    shift_amt   <= 1;
-                end
+//                2'b10: begin
+//                    mant_work   <= mant_work >> 1;
+//                    scale_out   <= scale_out + 10'd1;
+//                    shift_count   <= 1;
+//                end
 
                 2'b01: begin
-                    shift_amt <= 0;
+                 //   shift_count <= 64'd0;
                 end
 
                 2'b00: begin
                     mant_work   <= mant_work << 1;
-                    shift_count <= shift_count + 1;
+                    shift_count <= shift_count + 64'd1;
                     scale_out   <= scale_out - 10'd1;
                 end
 
@@ -113,7 +114,10 @@ always @(posedge clk) begin
         DONE_ST: begin
             mant_adj  <= mant_work;
             shift_amt <= shift_count;
-            done      <= 1;
+             done      <= 1;
+				 adj_exp    <= scale_out[2:0] ;
+				adj_regime  <= scale_out[8:3] ;
+				 exp_sign   <= scale_out[9];
         end
 
         endcase
