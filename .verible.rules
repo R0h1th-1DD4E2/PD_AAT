@@ -111,4 +111,9 @@ rule {
   }
 }
 
-# End of conservative semantic-focused ruleset.
+rule {
+  name: "always-comb"
+  disabled: true
+}
+
+# End 
