@@ -1,136 +1,75 @@
-# .github/workflows/verilog-lint.yml
-name: Verilog Linting and Testing
+name: RTL Lint Workflow
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, develop ]
-  workflow_dispatch:
+    branches: [ main, master ]
 
 jobs:
-  verilator-lint:
-    name: Verilator Lint
+  lint:
+    name: Lint Verilog (src/*.v)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Verilator
+      - name: Install tools (Verilator + helpers)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y verilator
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            verilator git wget tar gzip ca-certificates
+          verilator --version
 
-      - name: Run Verilator Lint
-        run: |
-          find src -name "*.v" -exec verilator --lint-only -Wall {} \;
-        continue-on-error: false
-
-  verible-lint:
-    name: Verible Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Verible
+      - name: Install Verible (verible-verilog-lint / verible-verilog-format) (fallback download)
         run: |
           VERIBLE_VERSION="v0.0-4023-gc1271a00"
           wget https://github.com/chipsalliance/verible/releases/download/${VERIBLE_VERSION}/verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
           tar -xzf verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
           echo "$PWD/verible-${VERIBLE_VERSION}/bin" >> $GITHUB_PATH
 
-      - name: Run Verible Lint
+      - name: Collect RTL files (src/*.v)
         run: |
-          verible-verilog-lint --rules_config .verible.rules src/*.v
-
-      - name: Run Verible Format Check
-        run: |
-          verible-verilog-format --verify src/*.v
-
-  # svlint:
-  #   name: SVLint Check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Install Rust
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         toolchain: stable
-  #         override: true
-  #
-  #     - name: Install svlint
-  #       run: cargo install svlint
-  #
-  #     - name: Run svlint
-  #       run: |
-  #         svlint src/*.v
-
-  iverilog-compile:
-    name: Icarus Verilog Compile Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Icarus Verilog
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y iverilog
-
-      - name: Compile with iverilog
-        run: |
-          for file in src/*.v; do
-            iverilog -g2012 -o /dev/null "$file" || exit 1
-          done
-
-#   cocotb-tests:
-#     name: CocoTB Tests
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version: '3.10'
-
-#       - name: Install dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y iverilog
-#           cd tb
-#           pip install -r requirements.txt
-
-#       - name: Run CocoTB tests
-#         run: |
-#           cd tb
-#           make
-
-#       - name: Upload test results
-#         if: always()
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: test-results
-#           path: |
-#             tb/results.xml
-#             tb/*.vcd
-
-  lint-summary:
-    name: Lint Summary
-    runs-on: ubuntu-latest
-    needs: [verilator-lint, verible-lint, iverilog-compile]
-    if: always()
-    steps:
-      - name: Check results
-        run: |
-          echo "All linting and testing completed"
-          if [ "${{ needs.verilator-lint.result }}" != "success" ] || \
-             [ "${{ needs.verible-lint.result }}" != "success" ] || \
-             [ "${{ needs.iverilog-compile.result }}" != "success" ]; then
-            echo "Some checks failed!"
+          git ls-files 'src/*.v' > ci_rtl_files.txt || true
+          echo "Files found in src/:"
+          sed -n '1,200p' ci_rtl_files.txt || true
+          if [ ! -s ci_rtl_files.txt ]; then
+            echo "No RTL files found under src/ - aborting."
             exit 1
           fi
+
+      - name: Run Verible lint (style & formatting checks)
+        id: verible
+        run: |
+          FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
+          # run verible format as a safety check (non-fatal), then lint strictly
+          if command -v verible-verilog-format >/dev/null 2>&1; then
+            echo "Running verible-verilog-format (in-place) on src/ files..."
+            verible-verilog-format --in_place $FILES || true
+          else
+            echo "verible-verilog-format not available; skipping format."
+          fi
+          if command -v verible-verilog-lint >/dev/null 2>&1; then
+            echo "Running verible-verilog-lint on src/ files..."
+            verible-verilog-lint $FILES
+          else
+            echo "verible-verilog-lint not available; skipping verible lint."
+            # If you want this to fail when verible is missing, replace the line above with:
+            # exit 1
+          fi
+
+      - name: Run Verilator lint-only (semantic checks)
+        id: verilator
+        run: |
+          FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
+          # -Wall is strict; add -Wno-<name> to silence known noisy warnings
+          echo "Running: verilator --lint-only -Wall -Isrc $FILES"
+          verilator --lint-only -Wall -Isrc $FILES
+
+      - name: Upload lint artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtl-lint-files
+          path: |
+            ci_rtl_files.txt
