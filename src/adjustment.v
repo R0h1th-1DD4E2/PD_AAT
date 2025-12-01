@@ -107,6 +107,9 @@ always @(posedge clk or negedge rst_n) begin
                     shift_count <= shift_count + 64'd1;
                     scale_out   <= scale_out - 10'd1;
                 end
+                default: begin
+                    // Do nothing
+                end
 
             endcase
         end
