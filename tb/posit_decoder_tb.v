@@ -54,7 +54,6 @@ posit_decoder dut1(
     start,
     clk,
     rst,
-    received,
     sign,
     done,
     ZERO,
@@ -66,7 +65,6 @@ posit_decoder dut1(
 
 initial begin
     clk = 0;
-    received = 0;
 
     // ----------------------------------------------------
     // RESET
@@ -80,7 +78,6 @@ initial begin
     $display("TEST 1: NaR input");
     posit_num = 32'h80000000;
     start     = 1;
-    #100; received = 1;
     #100; start = 0;
     #200;
 
@@ -90,8 +87,6 @@ initial begin
     $display("TEST 2: Zero input");
     posit_num = 32'h00000000;
     start     = 1;
-    received  = 0;
-    #100; received = 1;
     #100; start = 0;
     #200;
 
@@ -101,8 +96,6 @@ initial begin
     $display("TEST 3: Encoder test #1 result");
     posit_num = 32'h007FF97E;
     start     = 1;
-    received  = 0;
-    #100; received = 1;
     #100; start = 0;
     #200;
 
@@ -112,8 +105,6 @@ initial begin
     $display("TEST 4: Encoder test #2 result");
     posit_num = 32'hC33FFFFF;
     start     = 1;
-    received  = 0;
-    #100; received = 1;
     #100; start = 0;
     #200;
 
@@ -123,8 +114,6 @@ initial begin
     $display("TEST 5: Large positive regime");
     posit_num = 32'hFFFFFFFE;
     start     = 1;
-    received  = 0;
-    #100; received = 1;
     #100; start = 0;
     #200;
 
@@ -134,8 +123,6 @@ initial begin
     $display("TEST 6: Negative regime input");
     posit_num = 32'hAAAB2000;
     start     = 1;
-    received  = 0;
-    #100; received = 1;
     #100; start = 0;
     #200;
 
@@ -149,6 +136,12 @@ end
 
 always #5 clk = ~clk;
 
+initial begin
+    $monitor("Time=%0t | Posit=0x%h | Sign=%b | Done=%b | ZERO=%b | NAR=%b | k=%0d | exp_value=%0d | mantissa=0x%h",
+             $time, posit_num, sign, done, ZERO, NAR, k, exp_value, mantissa);
+    $dumpfile("posit_decoder_tb.vcd");
+    $dumpvars(0, posit_decoder_tb);
+end
 endmodule
 
 

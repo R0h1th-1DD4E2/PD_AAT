@@ -83,7 +83,7 @@ test-all: booths
 # Clean simulation files (extends CocoTB's clean)
 .PHONY: clean-sim
 clean-sim: clean
-	rm -f *.vcd
+	rm -f *.vcd *.vvp
 	rm -rf __pycache__
 	rm -rf .pytest_cache
 
