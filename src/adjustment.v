@@ -119,7 +119,9 @@ always @(posedge clk or negedge rst_n) begin
 				adj_regime  <= scale_out[8:3] ;
 				 exp_sign   <= scale_out[9];
         end
-
+        default: begin
+            // Do nothing  
+        end
         endcase
     end
 end
