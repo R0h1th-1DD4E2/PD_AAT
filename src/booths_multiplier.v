@@ -76,7 +76,7 @@ module booths_multiplier #(parameter N = 32)(
                     Q <= B;
                     ACC <= 0;
                     Q_1 <= 0;
-                    counter <= N-1;
+                    counter <= N - 1'b1;
                     done <= 0;
                 end
                 ACC_ADD: begin
@@ -90,8 +90,17 @@ module booths_multiplier #(parameter N = 32)(
                     counter <= counter - 1;
                 end
                 DONE: begin
-                    C <= {ACC, Q};
+                    C <= {ACC[N-1:0], Q};
                     done <= 1;
+                end
+                default: begin
+                    M <= 0;
+                    Q <= 0;
+                    ACC <= 0;
+                    Q_1 <= 0;
+                    counter <= 0;
+                    C <= 0;
+                    done <= 0;
                 end
             endcase
         end 
