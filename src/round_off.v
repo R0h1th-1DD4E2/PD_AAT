@@ -59,8 +59,12 @@ module round_off (
         if (!rst_n) begin
             mantissa_out <= 32'b0;
             temp         <= 32'b0;
+            ext          <= 32'b0;
             nbt          <= 6'd0;
             done         <= 1'b0;
+            sign_final   <= sign_out;
+            k_final      <= k_out;
+            exp_final    <=- exp_out;
         end else begin
             case (current_state)
                 IDLE: begin
@@ -81,11 +85,12 @@ module round_off (
                     // Extract 32 bits from shifted_mantissa[61:30]
                     ext          <= shifted_mantissa[61:30];
 
-                    // mantissa_out = ext AND mask
-                    mantissa_out <= ext & temp ;
+                    
                 end
 
                 COMPLETE: begin
+                    // mantissa_out = ext AND mask
+                    mantissa_out <= ext & temp ;
                     done <= 1'b1;                     // signal computation done
                     sign_final   <= sign_out;
                     k_final      <= k_out;
