@@ -8,20 +8,20 @@ on:
 
 jobs:
   lint:
-    name: Lint Verilog (src/*.v)
+    name: Lint Verilog
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install tools (Verilator + helpers)
+      - name: Install tools
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
             verilator git wget tar gzip ca-certificates
           verilator --version
 
-      - name: Collect RTL files (src/*.v)
+      - name: Collect RTL files
         run: |
           git ls-files 'src/*.v' > ci_rtl_files.txt || true
           echo "Files found in src/:"
@@ -31,7 +31,7 @@ jobs:
             exit 1
           fi
 
-      - name: Run Verilator lint-only (semantic checks)
+      - name: Run Verilator lint-only 
         id: verilator
         run: |
           FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
