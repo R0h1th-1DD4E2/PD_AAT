@@ -44,7 +44,7 @@ jobs:
           FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
           # -Wall is strict; add -Wno-<name> to silence known noisy warnings
           echo "Running: verilator --lint-only -Wall -Isrc $FILES"
-          verilator --lint-only -Wall -Wno-PINCONNECTEMPTY -Wno-UNUSEDSIGNAL Isrc $FILES
+          verilator --lint-only -Wall -Wno-PINCONNECTEMPTY -Wno-UNUSEDSIGNAL -Isrc $FILES
 
       - name: Run Verible lint (style & formatting checks)
         id: verible
