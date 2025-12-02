@@ -18,7 +18,7 @@ module controller (
     
     // reset stage 3 and 4
     output reg  adjust_rst_n,
-    output reg  round_rst_n,
+    output reg  round_rst_n
 );
 
     // State definitions
@@ -31,14 +31,10 @@ module controller (
     
     // Special case detection
     wire special_case_detected;
-    wire is_zero, is_nar;
     
     assign special_case_detected = ZERO_A_DE | NAR_A_DE | 
                                    ZERO_B_DE | NAR_B_DE | 
                                    NAR_EXP_ADDER | ZERO_EXP_ADDER;
-    
-    assign is_zero = ZERO_A_DE | ZERO_B_DE | ZERO_EXP_ADDER;
-    assign is_nar  = NAR_A_DE  | NAR_B_DE  | NAR_EXP_ADDER;
     
     // State machine
     always @(posedge clk or negedge rst_n) begin
@@ -69,39 +65,39 @@ module controller (
     // Output logic
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
-            encoder_start      = 1'b0;
-            adjust_rst_n       = 1'b1;
-            round_rst_n        = 1'b1;
+            encoder_start      <= 1'b0;
+            adjust_rst_n       <= 1'b1;
+            round_rst_n        <= 1'b1;
         end else begin 
             case (state)
                 NORMAL_OPERATION: begin
-                    adjust_rst_n = 1'b1;
-                    round_rst_n = 1'b1;
-                    encoder_start = 1'b0;
+                    adjust_rst_n <= 1'b1;
+                    round_rst_n <= 1'b1;
+                    encoder_start <= 1'b0;
                 end
                 
                 SPECIAL_DETECTED: begin
-                    adjust_rst_n = 1'b1;
-                    round_rst_n = 1'b1;
-                    encoder_start = 1'b1;
+                    adjust_rst_n <= 1'b1;
+                    round_rst_n <= 1'b1;
+                    encoder_start <= 1'b1;
                 end
                 
                 SPECIAL_PROCESSING: begin
-                    adjust_rst_n = 1'b0;
-                    round_rst_n = 1'b0;
-                    encoder_start = 1'b0;
+                    adjust_rst_n <= 1'b0;
+                    round_rst_n <= 1'b0;
+                    encoder_start <= 1'b0;
                 end
                 
                 SPECIAL_DONE: begin
-                    adjust_rst_n = 1'b1;
-                    round_rst_n = 1'b1;
-                    encoder_start = 1'b0;
+                    adjust_rst_n <= 1'b1;
+                    round_rst_n <= 1'b1;
+                    encoder_start <= 1'b0;
                 end
                 
                 default: begin
-                    encoder_start = 1'b0;
-                    adjust_rst_n = 1'b1;
-                    round_rst_n = 1'b1;
+                    encoder_start <= 1'b0;
+                    adjust_rst_n <= 1'b1;
+                    round_rst_n <= 1'b1;
                 end
             endcase
         end
