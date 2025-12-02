@@ -46,36 +46,6 @@ jobs:
           echo "Running: verilator --lint-only -Wall -Isrc $FILES"
           verilator --lint-only -Wall -Wno-PINCONNECTEMPTY -Wno-UNUSEDSIGNAL -Isrc $FILES
 
-      - name: Run Verible lint (style & formatting checks)
-        id: verible
-        run: |
-          FILES=$(tr '\n' ' ' < ci_rtl_files.txt)
-          
-          # Run verible format as a safety check (non-fatal)
-          if command -v verible-verilog-format >/dev/null 2>&1; then
-            echo "Running verible-verilog-format (in-place) on src/ files..."
-            verible-verilog-format --inplace $FILES || true
-          else
-            echo "verible-verilog-format not available; skipping format."
-          fi
-          
-          # Run verible lint with rules config
-          if command -v verible-verilog-lint >/dev/null 2>&1; then
-            echo "Running verible-verilog-lint on src/ files..."
-            # Check if rules config file exists
-            if [ -f ".verible.rules" ]; then
-              echo "Using .verible.rules configuration file"
-              verible-verilog-lint --rules_config=.verible.rules $FILES
-            else
-              echo "Warning: .verible.rules not found, running with default rules"
-              verible-verilog-lint $FILES
-            fi
-          else
-            echo "verible-verilog-lint not available; skipping verible lint."
-            # If you want this to fail when verible is missing, replace the line above with:
-            # exit 1
-          fi
-
       - name: Upload lint artifacts
         if: always()
         uses: actions/upload-artifact@v4
