@@ -75,6 +75,13 @@ posit_decode:
 	iverilog -g2012 -o posit_decoder_tb.vvp $(SRC_DIR)/posit_decoder.v $(TB)/posit_decoder_tb.v
 	vvp posit_decoder_tb.vvp
 
+# POSIT encoder testbench
+.PHONY: posit_encode
+posit_encode:
+	@echo "Running Posit Encoder tests..."
+	iverilog -g2012 -o posit_encoder_tb.vvp $(SRC_DIR)/posit_encoder.v $(TB)/posit_encoder_tb.v
+	vvp posit_encoder_tb.vvp
+
 # Run all tests
 .PHONY: test-all
 test-all: booths

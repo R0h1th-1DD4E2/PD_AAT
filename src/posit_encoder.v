@@ -1,6 +1,6 @@
 
 module posit_encoder(
-input start,clk,rst,received,
+input start,clk,rst,
 input   sign_out, 
 input  signed [5:0] k_out,//k (regime value) it can take values in the range [-31,30], so 6 bits to represent, k is the run length of regime.
 input  [2:0] exp_out,
@@ -153,7 +153,7 @@ if(!rst)begin
 					  
 		complete_e:begin
 	               done<=1'b1;
-						state<=(received)?start_e:complete_e;
+						state<=start_e;
 						end
 					   	
 		

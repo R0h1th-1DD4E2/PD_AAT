@@ -64,7 +64,6 @@ posit_encoder dut1(
     start,
     clk,
     rst,
-    received,
     sign_out,
     k_out,
     exp_out,
@@ -76,7 +75,6 @@ posit_encoder dut1(
 initial begin
     clk = 0;
     rst = 0;
-    received = 0;
     start = 0;
 
     #50 rst = 1;
@@ -90,10 +88,8 @@ initial begin
     mantissa_out  = 32'hFFF00000;
 
     #50 start = 1;
-    #200 received = 1;
     wait(done);
     #50 start = 0;
-    received = 0;
     #300;
 
     // --------------------------------------------------
@@ -105,10 +101,8 @@ initial begin
     mantissa_out  = 32'h0F0F0F0F;
 
     #50 start = 1;
-    #200 received = 1;
     wait(done);
     #50 start = 0;
-    received = 0;
     #300;
 
     // --------------------------------------------------
@@ -120,10 +114,8 @@ initial begin
     mantissa_out  = 32'hAAAAAAAA;
 
     #50 start = 1;
-    #200 received = 1;
     wait(done);
     #50 start = 0;
-    received = 0;
     #300;
 
     // --------------------------------------------------
@@ -135,10 +127,8 @@ initial begin
     mantissa_out  = 32'h00000000;
 
     #50 start = 1;
-    #200 received = 1;
     wait(done);
     #50 start = 0;
-    received = 0;
     #300;
 
     // --------------------------------------------------
@@ -150,10 +140,8 @@ initial begin
     mantissa_out  = 32'h12345678;
 
     #50 start = 1;
-    #200 received = 1;
     wait(done);
     #50 start = 0;
-    received = 0;
     #300;
 
     // --------------------------------------------------
@@ -165,10 +153,8 @@ initial begin
     mantissa_out  = 32'h87654321;
 
     #50 start = 1;
-    #200 received = 1;
     wait(done);
     #50 start = 0;
-    received = 0;
     #300;
 
     $finish;
@@ -181,6 +167,13 @@ end
 
 // Clock
 always #5 clk = ~clk;
+
+initial begin
+    $monitor("Time=%0t | Sign=%b | k=%0d | exp=%0d | mantissa=0x%h | Posit=0x%h | Done=%b",
+             $time, sign_out, k_out, exp_out, mantissa_out, p_hold, done);
+    $dumpfile("posit_encoder_tb.vcd");
+    $dumpvars(0, posit_encoder_tb);
+end
 
 endmodule
 
