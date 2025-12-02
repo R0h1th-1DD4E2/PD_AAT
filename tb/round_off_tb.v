@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module tb_round_off;
+module round_off_tb;
 
     // DUT inputs
     reg         clk;
@@ -35,7 +35,7 @@ module tb_round_off;
     );
 
     // Clock generation - 10 ns period
-    always #5 clk = 1;
+    always #5 clk = -clk;
     
   
  // Task to apply a single test
