@@ -6,7 +6,12 @@ module round_off (
     input  wire        start,
     input  wire [63:0] shifted_mantissa,
     input  wire [5:0]  k_out,
+    input  wire        sign_out,
+    input  wire [2:0]  exp_out,
     output reg  [31:0] mantissa_out,
+    output reg  [5:0]  k_final,
+    output reg         sign_final,
+    output reg  [2:0]  exp_final,
     output reg         done
 );
 
@@ -89,6 +94,9 @@ module round_off (
                 default: begin
                     mantissa_out <= mantissa_out;
                     done         <= 1'b0;
+                    sign_final   <= sign_out;
+                    k_final      <= k_out;
+                    exp_final    <=- exp_out;
                 end
             endcase
         end
