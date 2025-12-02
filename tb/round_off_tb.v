@@ -25,7 +25,12 @@ module tb_round_off;
         .start(start),
         .shifted_mantissa(shifted_mantissa),
         .k_out(k_out),
+        .sign_out(sign_out),
+        .exp_out(exp_out),
         .mantissa_out(mantissa_out),
+        .k_final(k_final),
+        .sign_final(sign_final)
+        .exp_final(exp_final)
         .done(done)
     );
 
