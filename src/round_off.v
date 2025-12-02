@@ -16,14 +16,12 @@ module round_off (
 );
 
     // FSM states
-    typedef enum reg [1:0] { 
-        IDLE     = 2'b00, 
-        INIT     = 2'b01, 
-        COMPUTE  = 2'b10,
-        COMPLETE = 2'b11
-    } state_t;
+    parameter IDLE     = 2'b00, 
+                INIT = 2'b01, 
+                COMPUTE  = 2'b10, 
+                COMPLETE = 2'b11;
 
-    state_t current_state, next_state;
+    reg [1:0] current_state, next_state;
 
     // Local regs
     reg [5:0] nbt;

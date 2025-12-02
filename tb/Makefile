@@ -82,9 +82,16 @@ posit_encode:
 	iverilog -g2012 -o posit_encoder_tb.vvp $(SRC_DIR)/posit_encoder.v $(TB)/posit_encoder_tb.v
 	vvp posit_encoder_tb.vvp
 
+# Rounding module testbench
+.PHONY: posit_rounding
+posit_rounding:
+	@echo "Running Posit Rounding tests..."
+	iverilog -g2012 -o posit_rounding_tb.vvp $(SRC_DIR)/round_off.v $(TB)/round_off_tb.v
+	vvp posit_rounding_tb.vvp
+
 # Run all tests
 .PHONY: test-all
-test-all: booths exp_adder posit_decode posit_encode
+test-all: booths exp_adder posit_decode posit_encode posit_rounding
 	@echo "All tests completed!"
 
 # Clean simulation files (extends CocoTB's clean)

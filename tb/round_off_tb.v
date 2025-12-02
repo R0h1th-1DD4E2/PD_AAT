@@ -29,8 +29,8 @@ module tb_round_off;
         .exp_out(exp_out),
         .mantissa_out(mantissa_out),
         .k_final(k_final),
-        .sign_final(sign_final)
-        .exp_final(exp_final)
+        .sign_final(sign_final),
+        .exp_final(exp_final),
         .done(done)
     );
 
