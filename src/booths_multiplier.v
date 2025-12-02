@@ -76,7 +76,7 @@ module booths_multiplier #(parameter N = 32)(
                     Q <= B;
                     ACC <= 0;
                     Q_1 <= 0;
-                    counter <= N - 1'b1;
+                    counter <= 5'(N - 1);
                     done <= 0;
                 end
                 ACC_ADD: begin

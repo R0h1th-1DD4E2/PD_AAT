@@ -24,7 +24,7 @@ module posit_mul (
     wire sign_out_exp;
     wire NaR_exp;
     wire zero_out_exp;
-    wire done_exp;
+    // wire done_exp;
     // Adjustment module outputs
     wire [63:0] mant_adj;
     wire done_adj;
@@ -102,7 +102,7 @@ module posit_mul (
         .sign_out(sign_out_exp),
         .NaR(NaR_exp),
         .zero_out(zero_out_exp),
-        .done(done_exp)
+        .done()
     );
 
     // Adjustment module

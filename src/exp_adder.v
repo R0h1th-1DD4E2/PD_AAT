@@ -75,8 +75,8 @@ module exp_adder #(
                 end
                 INIT: begin
                     // Convert to raw exponent
-                    exp_A_raw <= (k_A << ES) + exp_A;
-                    exp_B_raw <= (k_B << ES) + exp_B;
+                    exp_A_raw <= ({3'b0, k_A} << ES) + {6'b0, exp_A};
+                    exp_B_raw <= ({3'b0, k_B} << ES) + {6'b0, exp_B};
                     sign <= sign_A ^ sign_B;
                 end
                 ADD_EXP: begin
