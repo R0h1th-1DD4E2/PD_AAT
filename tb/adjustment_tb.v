@@ -6,32 +6,30 @@
 
 module adjustment_tb;
 
-    reg clk, reset, start;
-    reg [9:0]  scale_in;
+    reg clk, rst_n, start;
+    reg [9:0]  E_raw;
     reg [63:0] mant_prod;
+    reg        sign_in;
 
-    wire [9:0] scale_out;
     wire [63:0] mant_adj;
-    wire [63:0] shift_amt;
     wire done;
     wire [2:0] adj_exp;
-    wire [5:0] adj_regime;
-    wire exp_sign;
+    wire [5:0] adj_k;
+    wire sign_out;
 
     // Instantiate DUT
     adjustment dut (
         .clk(clk),
-        .reset(reset),
+        .rst_n(rst_n),
         .start(start),
-        .scale_in(scale_in),
+        .E_raw(E_raw),
         .mant_prod(mant_prod),
-        .scale_out(scale_out),
+        .sign_in(sign_in),
         .mant_adj(mant_adj),
-        .shift_amt(shift_amt),
         .done(done),
         .adj_exp(adj_exp),
-        .adj_regime(adj_regime),
-        .exp_sign(exp_sign)
+        .adj_k(adj_k),
+        .sign_out(sign_out)
     );
 
     // Clock generation
@@ -46,7 +44,8 @@ module adjustment_tb;
 
         start     = 1;
         mant_prod = mant_val;
-        scale_in  = 10'd100;
+        E_raw     = 10'd100;
+        sign_in   = 0;
 
         @(posedge clk);
         start = 0;
@@ -57,23 +56,23 @@ module adjustment_tb;
         $display("DONE for %s:", label);
         $display(" mant_prod  = %h", mant_val);
         $display(" mant_adj   = %h", mant_adj);
-        $display(" scale_out  = %d", scale_out);
-        $display(" shift_amt  = %d", shift_amt);
-        $display(" exp_sign   = %b", exp_sign);
-        $display(" adj_regime = %d", adj_regime);
+        $display(" adj_k      = %d", adj_k);
         $display(" adj_exp    = %d", adj_exp);
+        $display(" sign_out   = %b", sign_out);
     end
     endtask
 
 
     initial begin
         clk = 0;
-        reset = 1;
+        rst_n = 1;
         start = 0;
         mant_prod = 0;
-        scale_in = 0;
+        E_raw = 0;
+        sign_in = 0;
 
-        #20 reset = 0;
+        #20 rst_n = 0;
+        #20 rst_n = 1;
 
         // CASE 1: mant_work[63:62] = 2'b11
         run_case(64'hC000000000000000, "Case 1: 11");
@@ -90,6 +89,11 @@ module adjustment_tb;
         #50;
         $display("\nAll cases completed.");
         $finish;
+    end
+
+    initial begin
+        $dumpfile("adjustment_tb.vcd");
+        $dumpvars(0, adjustment_tb);
     end
 
 endmodule

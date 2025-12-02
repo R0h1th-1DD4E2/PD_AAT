@@ -89,9 +89,16 @@ posit_rounding:
 	iverilog -g2012 -o posit_rounding_tb.vvp $(SRC_DIR)/round_off.v $(TB)/round_off_tb.v
 	vvp posit_rounding_tb.vvp
 
+# ajust module testbench
+.PHONY: posit_adjust
+posit_adjust:
+	@echo "Running Posit Adjust tests..."
+	iverilog -g2012 -o posit_adjust_tb.vvp $(SRC_DIR)/adjustment.v $(TB)/adjustment_tb.v
+	vvp posit_adjust_tb.vvp
+
 # Run all tests
 .PHONY: test-all
-test-all: booths exp_adder posit_decode posit_encode posit_rounding
+test-all: booths exp_adder posit_decode posit_encode posit_rounding posit_adjust
 	@echo "All tests completed!"
 
 # Clean simulation files (extends CocoTB's clean)
