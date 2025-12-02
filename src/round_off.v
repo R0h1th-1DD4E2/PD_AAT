@@ -89,14 +89,15 @@ module round_off (
 
                 COMPLETE: begin
                     done <= 1'b1;                     // signal computation done
+                    sign_final   <= sign_out;
+                    k_final      <= k_out;
+                    exp_final    <=- exp_out;
                 end
 
                 default: begin
                     mantissa_out <= mantissa_out;
                     done         <= 1'b0;
-                    sign_final   <= sign_out;
-                    k_final      <= k_out;
-                    exp_final    <=- exp_out;
+                   
                 end
             endcase
         end
