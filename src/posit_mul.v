@@ -7,7 +7,9 @@ module posit_mul (
     input  wire [31:0] posit_a,
     input  wire [31:0] posit_b,
     output reg  [31:0] posit_result,
-    output reg         done
+    output reg         done,
+    output wire        NAR,
+    output wire        ZERO
 );
     wire sign_a, sign_b;
     wire done_decode_a, done_decode_b;
@@ -38,9 +40,13 @@ module posit_mul (
     wire        sign_final;
     wire [2:0]  exp_final;
     // Controller outputs
-    wire encoder_start;
     wire adjust_rst_n;
     wire round_rst_n;
+    wire encoder_rst_n;
+    wire [31:0] encoder_result;
+    wire [31:0] controller_result;
+    wire encode_done;
+    wire controller_done;
 
     // Decoder instantiation 
     // Instantiate decoder for posit_a
@@ -138,15 +144,15 @@ module posit_mul (
 
     // Posit encoder: pack sign,k,exp,mantissa back to posit
     posit_encoder posit_encoder_inst (
-        .start(done_round || encoder_start),
+        .start(done_round ),
         .clk(clk),
-        .rst(rst_n),
+        .rst(rst_n || encoder_rst_n),
         .sign_out(sign_final),
         .k_out(k_final),
         .exp_out(exp_final),
         .mantissa_out(mantissa_rounded),
-        .p_hold(posit_result),
-        .done(done)
+        .p_hold(encoder_result),
+        .done(encode_done)
     );
 
     controller ctrl_inst (
@@ -159,12 +165,30 @@ module posit_mul (
         .NAR_B_DE(NAR_decode_b),
         .NAR_EXP_ADDER(NaR_exp),
         .ZERO_EXP_ADDER(zero_out_exp),
-        // Encoder handshake
-        .encoder_start(encoder_start),
-        .encode_done(done),
+        // Encoder data outputs
+        .result(controller_result),
+        .NAR(NAR),
+        .ZERO(ZERO),
         // Stage resets
         .adjust_rst_n(adjust_rst_n),
-        .round_rst_n(round_rst_n)
+        .round_rst_n(round_rst_n),
+        .encoder_rst_n(encoder_rst_n),
+        .done(controller_done)
     );
 
+    // Final posit result selection
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            posit_result <= 32'd0;
+        end else begin
+            // Priority to special cases handled by controller
+            if (NAR | ZERO) begin
+                posit_result <= controller_result;
+                done <= controller_done;
+            end else begin
+                posit_result <= encoder_result;
+                done <= encode_done;
+            end
+        end
+    end
 endmodule

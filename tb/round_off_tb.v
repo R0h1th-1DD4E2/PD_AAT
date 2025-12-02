@@ -252,6 +252,11 @@ if(done) start=0;
       
     end
 
+initial begin
+$dumpfile("round_off_tb.vcd");
+$dumpvars(0, round_off_tb);
+end
+
 endmodule
 
 
