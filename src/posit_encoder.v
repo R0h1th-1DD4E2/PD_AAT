@@ -15,7 +15,7 @@ module posit_encoder(
 	parameter start_e = 3'd0, sign_e = 3'd1, regime_value_e = 3'd2, es_value_e = 3'd3, mantissa_e = 3'd4, complete_e = 3'd5;
 
 	reg [4:0] index, m_cnt;
-	reg [2:0] es_count;
+	reg [1:0] es_count;
 	reg sign_reg, kb5;  // 5th bit of k_out.
 	reg [2:0] exp_out_reg;
 	reg [31:0] mantissa_out_reg;
