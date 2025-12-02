@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 
 module posit_encoder(
 input start,clk,rst,

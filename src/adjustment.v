@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module adjustment (
     input                      clk,
     input                      rst_n,

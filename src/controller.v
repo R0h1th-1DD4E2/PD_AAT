@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module controller (
     input  wire clk,
     input  wire rst_n,

@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+
 module booths_multiplier #(parameter N = 32)(
     input wire clk, rst_n, load,
     input wire [N-1:0] A, B,

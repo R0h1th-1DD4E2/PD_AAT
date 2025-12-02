@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module posit_decoder (
 	input  [31:0] posit_num,
 	input         start,
