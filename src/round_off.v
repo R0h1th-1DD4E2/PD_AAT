@@ -27,13 +27,13 @@ module round_off (
     reg [5:0] nbt;
     reg [31:0] temp;
     reg [31:0] ext;
-
+   // reg [29:0] dummy;
     wire k_sign;
     wire [5:0] k_abs;
 
     // Signed/absolute k_out
     assign k_sign = k_out[5];
-    assign k_abs  = k_sign ? (~k_out + 6'd1) : k_out;
+    assign k_abs  = k_sign ? -k_out : k_out;
 
     // FSM sequential logic
     always @(posedge clk or negedge rst_n) begin
@@ -59,23 +59,35 @@ module round_off (
         if (!rst_n) begin
             mantissa_out <= 32'b0;
             temp         <= 32'b0;
-            ext          <= 32'b0;
             nbt          <= 6'd0;
             done         <= 1'b0;
-            sign_final   <= sign_out;
-            k_final      <= k_out;
-            exp_final    <=- exp_out;
+				ext          <=0;
+				k_final    <=0;
+            sign_final<=0;
+      exp_final<=0;
+		//dummy<=0;
+        
         end else begin
             case (current_state)
                 IDLE: begin
                     done         <= 1'b0;
                     mantissa_out <= mantissa_out;
+						  ext          <=0;
+						  	k_final    <=0;
+            sign_final<=0;
+      exp_final<=0;
+		//  dummy<=0;
                 end
 
                 INIT: begin
                     mantissa_out <= 32'b0;           // initialize output
                     nbt          <= (!k_sign) ? (6'd26 - k_out) : (6'd27 - k_abs);
                     temp         <= 32'hFFFF_FFFF;   // all ones
+						  ext          <=0;
+						  	k_final    <=0;
+            sign_final<=0;
+      exp_final<=0;
+	//	dummy<=0;
                 end
 
                 COMPUTE: begin
@@ -84,17 +96,18 @@ module round_off (
 
                     // Extract 32 bits from shifted_mantissa[61:30]
                     ext          <= shifted_mantissa[61:30];
+						  
 
-                    
+                 //   dummy<=shifted_mantissa[29:0];
+                
                 end
 
                 COMPLETE: begin
-                    // mantissa_out = ext AND mask
-                    mantissa_out <= ext & temp ;
-                    done <= 1'b1;                     // signal computation done
+                    done <= 1'b1;   // signal computation done
+						      mantissa_out <= ext & temp ;// mantissa_out = ext AND mask
                     sign_final   <= sign_out;
                     k_final      <= k_out;
-                    exp_final    <=- exp_out;
+                    exp_final    <= exp_out;
                 end
 
                 default: begin
@@ -107,3 +120,27 @@ module round_off (
     end
 
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
