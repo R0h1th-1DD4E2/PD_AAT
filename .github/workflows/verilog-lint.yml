@@ -21,13 +21,6 @@ jobs:
             verilator git wget tar gzip ca-certificates
           verilator --version
 
-      - name: Install Verible (verible-verilog-lint / verible-verilog-format)
-        run: |
-          VERIBLE_VERSION="v0.0-4023-gc1271a00"
-          wget https://github.com/chipsalliance/verible/releases/download/${VERIBLE_VERSION}/verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
-          tar -xzf verible-${VERIBLE_VERSION}-linux-static-x86_64.tar.gz
-          echo "$PWD/verible-${VERIBLE_VERSION}/bin" >> $GITHUB_PATH
-
       - name: Collect RTL files (src/*.v)
         run: |
           git ls-files 'src/*.v' > ci_rtl_files.txt || true
