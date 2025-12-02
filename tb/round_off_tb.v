@@ -68,34 +68,40 @@ module tb_round_off;
         // Apply ACTIVE-LOW reset properly: 1 -> 0 -> 1
         #10 rst_n = 0;     // ASSERT reset
         #20 rst_n = 1;     // DEASSERT reset
-
-        // ------------ EXPANDED TEST VECTORS -------------
+                
+        // ------------ TEST VECTORS -------------
+        // Basic tests
         apply_test(64'hFFFF_FFFF_FFFF_FFFF,  6'd2);
         apply_test(64'h1234_5678_ABCD_EF01,  6'd5);
         apply_test(64'h0F0E_0D0C_0B0A_0908, -6'sd3);
         apply_test(64'hDEAD_BEEF_DEAD_BEEF, -6'sd7);
 
-        apply_test(64'hAAAAAAAA_AAAAAAAA,   6'd0);
+        // Edge cases for k_out
+        apply_test(64'hAAAAAAAA_AAAAAAAA,   6'd0);    // smallest +ve
         apply_test(64'hBBBBBBBB_BBBBBBBB,   6'd1);
-        apply_test(64'hCCCCCCCC_CCCCCCCC,   6'd26);
-        apply_test(64'hDDDDDDDD_DDDDDDDD,  -6'sd1);
-        apply_test(64'hEEEEEEEE_EEEEEEEE,  -6'sd31);
+        apply_test(64'hCCCCCCCC_CCCCCCCC,   6'd26);   // max before negative rule flips
+        apply_test(64'hDDDDDDDD_DDDDDDDD,  -6'sd1);   // smallest negative
+        apply_test(64'hEEEEEEEE_EEEEEEEE,  -6'sd2);
+        apply_test(64'hFFFFFFFF_00000000,  -6'sd31);  // large negative magnitude
 
-        apply_test(64'h0000_0000_0000_0000,  6'd4);
-        apply_test(64'hFFFF_0000_FFFF_0000,  6'd8);
-        apply_test(64'hF0F0_F0F0_F0F0_F0F0,  6'd10);
-        apply_test(64'h0F0F_0F0F_0F0F_0F0F,  6'd12);
+        // Pattern tests
+        apply_test(64'h0000_0000_0000_0000,  6'd4);   // All zeros mantissa
+        apply_test(64'hFFFF_0000_FFFF_0000,  6'd8);   // alternating chunks
+        apply_test(64'hF0F0_F0F0_F0F0_F0F0,  6'd10);  // alternating 11110000
+        apply_test(64'h0F0F_0F0F_0F0F_0F0F,  6'd12);  // alternating 00001111
+        apply_test(64'hAAAAAAAA_55555555,   6'd15);   // classic checkerboard
 
-        apply_test(64'hAAAAAAAA_55555555,   6'd15);
+        // Random-like values
         apply_test(64'h1234_ABCD_4321_DCBA, -6'sd4);
         apply_test(64'h89AB_CDEF_0123_4567,  6'd17);
         apply_test(64'h7654_3210_FEDC_BA98, -6'sd12);
         apply_test(64'h1357_9BDF_2468_ACE0,  6'd20);
 
-        apply_test(64'h8000_0000_0000_0001,  6'd25);
-        apply_test(64'h7FFF_FFFF_FFFF_FFFF, -6'sd6);
-        apply_test(64'h0000_FFFF_0000_FFFF,  6'd3);
-        apply_test(64'hFF00_FF00_FF00_FF00, -6'sd8);
+        // Extreme mix
+        apply_test(64'h8000_0000_0000_0001,  6'd25);   // MSB + LSB only
+        apply_test(64'h7FFF_FFFF_FFFF_FFFF, -6'sd6);   // all ones except MSB
+        apply_test(64'h0000_FFFF_0000_FFFF,  6'd3);    // repeating halves
+        apply_test(64'hFF00_FF00_FF00_FF00, -6'sd8);   // repeating 1111111100000000
 
         #100;
         $finish;
