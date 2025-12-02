@@ -84,7 +84,7 @@ posit_encode:
 
 # Run all tests
 .PHONY: test-all
-test-all: booths
+test-all: booths exp_adder posit_decode posit_encode
 	@echo "All tests completed!"
 
 # Clean simulation files (extends CocoTB's clean)
