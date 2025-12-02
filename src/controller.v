@@ -65,7 +65,7 @@ module controller (
     end
     
     // Output logic
-    always @(*) begin
+    always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             encoder_start      = 1'b0;
             adjust_rst_n       = 1'b1;
