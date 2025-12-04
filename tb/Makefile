@@ -96,9 +96,16 @@ posit_adjust:
 	iverilog -g2012 -o posit_adjust_tb.vvp $(SRC_DIR)/adjustment.v $(TB)/adjustment_tb.v
 	vvp posit_adjust_tb.vvp
 
+# POSIT multiplier testbench
+.PHONY: posit_mul
+posit_mul:
+	@echo "Running Posit Multiplier tests..."
+	iverilog -g2012 -o posit_mul_tb.vvp $(SRC_DIR)/*.v $(TB)/posit_mul_tb.v
+	vvp posit_mul_tb.vvp
+
 # Run all tests
 .PHONY: test-all
-test-all: booths exp_adder posit_decode posit_encode posit_rounding posit_adjust
+test-all: booths exp_adder posit_decode posit_encode posit_rounding posit_adjust posit_mul
 	@echo "All tests completed!"
 
 # Clean simulation files (extends CocoTB's clean)
