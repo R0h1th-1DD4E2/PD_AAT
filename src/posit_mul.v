@@ -50,6 +50,7 @@ module posit_mul (
     wire [31:0] encoder_result;
     wire [31:0] controller_result;
     wire encode_done;
+    wire init_encoder;
     wire controller_done;
 
 
@@ -60,7 +61,7 @@ module posit_mul (
         if (!rst_n) begin
             decode_done_reg <= 2'b00;
         end 
-        else if (&exp_mul_init_reg) begin
+        else if (init_mul & init_exp) begin
             decode_done_reg <= 2'b00;
         end
         else begin
@@ -70,21 +71,6 @@ module posit_mul (
         end
     end
 
-    always @(init_exp or init_mul or rst_n or done_decode_a or done_decode_b) begin
-        if (!rst_n) begin
-            exp_mul_init_reg <= 2'b00;
-        end 
-        else if (&decode_done_reg) begin
-            exp_mul_init_reg <= 2'b00;
-        end
-        else begin
-            // Independently set each bit
-            exp_mul_init_reg[0] <= init_exp ? 1'b1 : exp_mul_init_reg[0];
-            exp_mul_init_reg[1] <= init_mul ? 1'b1 : exp_mul_init_reg[1];
-        end
-    end
-
-
     // Decoder instantiation 
     // Instantiate decoder for posit_a
     posit_decoder decoder_a (
@@ -92,7 +78,7 @@ module posit_mul (
         .start(start),
         .clk(clk),
         .rst(rst_n),
-        .recieved(&exp_mul_init_reg),
+        .recieved(init_mul & init_exp),
         .sign(sign_a),
         .done(done_decode_a),
         .ZERO(ZERO_decode_a),
@@ -108,7 +94,7 @@ module posit_mul (
         .start(start),
         .clk(clk),
         .rst(rst_n),
-        .recieved(&exp_mul_init_reg),
+        .recieved(init_mul & init_exp),
         .sign(sign_b),
         .done(done_decode_b),
         .ZERO(ZERO_decode_b),
@@ -180,7 +166,7 @@ module posit_mul (
         .k_out(adj_k),
         .sign_out(sign_out_adj),
         .exp_out(adj_exp),
-        .recieved(),
+        .recieved(init_encoder),
         .mantissa_out(mantissa_rounded),
         .k_final(k_final),
         .sign_final(sign_final),
@@ -199,7 +185,8 @@ module posit_mul (
         .exp_out(exp_final),
         .mantissa_out(mantissa_rounded),
         .p_hold(encoder_result),
-        .done(encode_done)
+        .done(encode_done),
+        .init(init_encoder)
     );
 
     controller ctrl_inst (
