@@ -153,7 +153,7 @@ module posit_mul (
     // Adjustment module
     adjustment adjustment_inst ( // have to check the inititalization at reset
         .clk(clk),
-        .rst_n(rst_n || adjust_rst_n),
+        .rst_n(rst_n & adjust_rst_n),
         .start(done_mul),
         .E_raw(exp_raw),
         .mant_prod(mantissa_product),
@@ -168,7 +168,7 @@ module posit_mul (
     // Round-off: produce final mantissa bits
     round_off round_off_inst (
         .clk(clk),
-        .rst_n(rst_n || round_rst_n),
+        .rst_n(rst_n & round_rst_n),
         .start(done_adj),
         .shifted_mantissa(mant_adj),
         .k_out(adj_k),
@@ -185,7 +185,7 @@ module posit_mul (
     posit_encoder posit_encoder_inst (
         .start(done_round ),
         .clk(clk),
-        .rst(rst_n || encoder_rst_n),
+        .rst(rst_n & encoder_rst_n),
         .sign_out(sign_final),
         .k_out(k_final),
         .exp_out(exp_final),
