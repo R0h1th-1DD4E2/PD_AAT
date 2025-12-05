@@ -5,6 +5,7 @@ module posit_decoder (
 	input         start,
 	input         clk,
 	input         rst,
+	input		  recieved,
 	output reg    sign,
 	output reg    done,
 	output reg    ZERO,
@@ -119,7 +120,7 @@ always @(posedge clk or negedge rst) begin // active low reset
 
 			complete_d: begin
 				done  <= 1'b1;
-				state <= start_d;
+				state <= (recieved) ? start_d : complete_d;
 			end
 
 			default: begin

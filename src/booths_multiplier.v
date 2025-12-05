@@ -3,7 +3,7 @@
 module booths_multiplier #(parameter N = 32)(
     input wire clk, rst_n, load,
     input wire [N-1:0] A, B,
-    output reg done,
+    output reg done, init,
     output reg [2*N-1:0] C
 );
     
@@ -65,11 +65,13 @@ module booths_multiplier #(parameter N = 32)(
             counter <= 0;
             C <= 0;
             done <= 0;
+            init <= 0;
         end
         else begin
             case (cur_state)
                 IDLE: begin
                     done <= 0;
+                    init <= 0;
                 end
                 INIT: begin
                     M <= A;
@@ -78,20 +80,25 @@ module booths_multiplier #(parameter N = 32)(
                     Q_1 <= 0;
                     counter <= 5'(N - 1);
                     done <= 0;
+                    init <= 1;
                 end
                 ACC_ADD: begin
                     ACC <= ACC + M;
+                    init <= 0;
                 end
                 ACC_SUB: begin
                     ACC <= ACC - M;
+                    init <= 0;
                 end
                 AR_SHIFT: begin
                     {ACC, Q, Q_1} <= $signed({ACC, Q, Q_1}) >>> 1;
                     counter <= counter - 1;
+                    init <= 0;
                 end
                 DONE: begin
                     C <= {ACC[N-1:0], Q};
                     done <= 1;
+                    init <= 0;
                 end
                 default: ;
             endcase

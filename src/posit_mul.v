@@ -21,11 +21,13 @@ module posit_mul (
     // Booth's multiplier outputs
     wire [63:0] mantissa_product;
     wire done_mul;
+    wire init_mul;
     // Exponent adder outputs
     wire [9:0] exp_raw;
     wire sign_out_exp;
     wire NaR_exp;
     wire zero_out_exp;
+    wire init_exp;
     // wire done_exp;
     // Adjustment module outputs
     wire [63:0] mant_adj;
@@ -48,6 +50,39 @@ module posit_mul (
     wire encode_done;
     wire controller_done;
 
+
+    // consider both done signals from decoders as decoded signals can be ready at different times
+    reg [1:0] decode_done_reg, exp_mul_init_reg;
+
+    always @(done_decode_a or done_decode_b or rst_n or init_mul or init_exp) begin
+        if (!rst_n) begin
+            decode_done_reg <= 2'b00;
+        end 
+        else if (&exp_mul_init_reg) begin
+            decode_done_reg <= 2'b00;
+        end
+        else begin
+            // Independently set each bit
+            decode_done_reg[0] <= done_decode_a ? 1'b1 : decode_done_reg[0];
+            decode_done_reg[1] <= done_decode_b ? 1'b1 : decode_done_reg[1];
+        end
+    end
+
+    always @(init_exp or init_mul or rst_n or done_decode_a or done_decode_b) begin
+        if (!rst_n) begin
+            exp_mul_init_reg <= 2'b00;
+        end 
+        else if (&decode_done_reg) begin
+            exp_mul_init_reg <= 2'b00;
+        end
+        else begin
+            // Independently set each bit
+            exp_mul_init_reg[0] <= init_exp ? 1'b1 : exp_mul_init_reg[0];
+            exp_mul_init_reg[1] <= init_mul ? 1'b1 : exp_mul_init_reg[1];
+        end
+    end
+
+
     // Decoder instantiation 
     // Instantiate decoder for posit_a
     posit_decoder decoder_a (
@@ -55,6 +90,7 @@ module posit_mul (
         .start(start),
         .clk(clk),
         .rst(rst_n),
+        .recieved(&exp_mul_init_reg),
         .sign(sign_a),
         .done(done_decode_a),
         .ZERO(ZERO_decode_a),
@@ -70,6 +106,7 @@ module posit_mul (
         .start(start),
         .clk(clk),
         .rst(rst_n),
+        .recieved(&exp_mul_init_reg),
         .sign(sign_b),
         .done(done_decode_b),
         .ZERO(ZERO_decode_b),
@@ -83,10 +120,11 @@ module posit_mul (
     booths_multiplier #(.N(32)) booths_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .load(done_decode_a & done_decode_b), // change to check for variable done signals from decoders
+        .load(&decode_done_reg),
         .A(mantissa_decode_a),
         .B(mantissa_decode_b),
         .done(done_mul),
+        .init(init_mul),
         .C(mantissa_product)
     );
 
@@ -97,7 +135,7 @@ module posit_mul (
     ) exp_adder_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .start(start), // this is the start of top module and not dependent on done signals of decoders
+        .start(&decode_done_reg),
         .exp_A(exp_decode_a),
         .exp_B(exp_decode_b),
         .k_A(k_decode_a),
@@ -108,7 +146,8 @@ module posit_mul (
         .sign_out(sign_out_exp),
         .NaR(NaR_exp),
         .zero_out(zero_out_exp),
-        .done()
+        .done(),
+        .init(init_exp)
     );
 
     // Adjustment module

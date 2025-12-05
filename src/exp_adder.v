@@ -14,7 +14,7 @@ module exp_adder #(
     output reg sign_out,
     output reg NaR,
     output reg zero_out,
-    output reg done
+    output reg done, init
     
 );
 
@@ -65,6 +65,7 @@ module exp_adder #(
             NaR <= 0;
             zero_out <= 0;
             done <= 0;
+            init <= 0;
         end 
         else begin
             case (cur_state)
@@ -72,16 +73,19 @@ module exp_adder #(
                     done <= 0;
                     NaR <= 0;
                     zero_out <= 0;
+                    init <= 0;
                 end
                 INIT: begin
                     // Convert to raw exponent
                     exp_A_raw <= ({3'b0, k_A} << ES) + {6'b0, exp_A};
                     exp_B_raw <= ({3'b0, k_B} << ES) + {6'b0, exp_B};
                     sign <= sign_A ^ sign_B;
+                    init <= 1;
                 end
                 ADD_EXP: begin
                     // add the output 
                     exp_sum <= exp_A_raw + exp_B_raw;
+                    init <= 0;
                 end
                 DONE: begin
                     done <= 1;
@@ -93,6 +97,7 @@ module exp_adder #(
                     end else if (exp_sum < EXP_MIN) begin
                         zero_out <= 1;
                     end
+                    init <= 0;
                 end
                 default: ;
             endcase
