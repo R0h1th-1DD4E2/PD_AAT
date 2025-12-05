@@ -9,6 +9,7 @@ module exp_adder #(
     input wire [ES-1:0] exp_A, exp_B,
     input wire signed [K_BITS-1:0] k_A, k_B,
     input wire sign_A, sign_B,
+    input wire recieved,
 
     output reg [MAX_BITS:0] exp_raw,
     output reg sign_out,
@@ -52,7 +53,7 @@ module exp_adder #(
             IDLE:       next_state = (start) ? INIT : IDLE;
             INIT:       next_state = ADD_EXP;
             ADD_EXP:    next_state = DONE;
-            DONE:       next_state = IDLE;
+            DONE:       next_state = (recieved) ? IDLE : DONE;
             default:    next_state = IDLE;
         endcase
     end

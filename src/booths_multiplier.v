@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module booths_multiplier #(parameter N = 32)(
-    input wire clk, rst_n, load,
+    input wire clk, rst_n, load,recieved,
     input wire [N-1:0] A, B,
     output reg done, init,
     output reg [2*N-1:0] C
@@ -50,7 +50,7 @@ module booths_multiplier #(parameter N = 32)(
             ACC_ADD:    next_state = AR_SHIFT;
             ACC_SUB:    next_state = AR_SHIFT;
             AR_SHIFT:   next_state = (counter == 0) ? DONE : CHECK_LSB;
-            DONE:       next_state = IDLE;
+            DONE:       next_state = (recieved) ? IDLE : DONE;
             default:    next_state = IDLE;
         endcase
     end

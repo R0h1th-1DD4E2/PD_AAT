@@ -8,11 +8,13 @@ module round_off (
     input  wire [5:0]  k_out,
     input  wire        sign_out,
     input  wire [2:0]  exp_out,
+    input  wire        recieved,
     output reg  [31:0] mantissa_out,
     output reg  [5:0]  k_final,
     output reg         sign_final,
     output reg  [2:0]  exp_final,
-    output reg         done
+    output reg         done,
+    output reg         init
 );
 
     // FSM states
@@ -49,7 +51,7 @@ module round_off (
             IDLE:     next_state = (start) ? INIT : IDLE;
             INIT:     next_state = COMPUTE;
             COMPUTE:  next_state = COMPLETE;
-            COMPLETE: next_state = IDLE;
+            COMPLETE: next_state = (recieved) ? IDLE : COMPLETE;
             default:  next_state = IDLE;
         endcase
     end
@@ -61,33 +63,33 @@ module round_off (
             temp         <= 32'b0;
             nbt          <= 6'd0;
             done         <= 1'b0;
-				ext          <=0;
-				k_final    <=0;
-            sign_final<=0;
-      exp_final<=0;
-		//dummy<=0;
+            ext          <=0;
+            k_final      <=0;
+            sign_final   <=0;
+            exp_final    <=0;
+            init        <= 1'b0;
         
         end else begin
             case (current_state)
                 IDLE: begin
                     done         <= 1'b0;
                     mantissa_out <= mantissa_out;
-						  ext          <=0;
-						  	k_final    <=0;
-            sign_final<=0;
-      exp_final<=0;
-		//  dummy<=0;
+				    ext          <=0;
+					k_final      <=0;
+                    sign_final   <=0;
+                    exp_final    <=0;
+                    init         <= 1'b0;
                 end
 
                 INIT: begin
                     mantissa_out <= 32'b0;           // initialize output
                     nbt          <= (!k_sign) ? (6'd26 - k_out) : (6'd27 - k_abs);
                     temp         <= 32'hFFFF_FFFF;   // all ones
-						  ext          <=0;
-						  	k_final    <=0;
-            sign_final<=0;
-      exp_final<=0;
-	//	dummy<=0;
+					ext          <=0;
+					k_final      <=0;
+                    sign_final   <=0;
+                    exp_final    <=0;
+                    init         <= 1'b1;
                 end
 
                 COMPUTE: begin
@@ -99,7 +101,7 @@ module round_off (
 						  
 
                  //   dummy<=shifted_mantissa[29:0];
-                
+                    init         <= 1'b0;
                 end
 
                 COMPLETE: begin
@@ -108,12 +110,13 @@ module round_off (
                     sign_final   <= sign_out;
                     k_final      <= k_out;
                     exp_final    <= exp_out;
+                    init         <= 1'b0;
                 end
 
                 default: begin
                     mantissa_out <= mantissa_out;
                     done         <= 1'b0;
-                   
+                    init         <= 1'b0;
                 end
             endcase
         end

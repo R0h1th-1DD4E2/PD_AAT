@@ -7,12 +7,14 @@ module adjustment (
     input      [9:0]   E_raw,
     input      [63:0]  mant_prod,
     input              sign_in,
+    input              recieved,
 
     output reg [63:0]  mant_adj,
     output reg         done,
     output reg [2:0]   adj_exp,
     output reg [5:0]   adj_k,
-    output reg         sign_out
+    output reg         sign_out,
+    output reg         init
 );
 
     // Internal registers
@@ -23,7 +25,8 @@ module adjustment (
     // State encoding
     parameter IDLE     = 2'b00,
               SHIFTING = 2'b01,
-              DONE_ST  = 2'b10;
+              INIT     = 2'b10,
+              DONE_ST  = 2'b11;
 
     reg [1:0] current_state, next_state;
 
@@ -38,24 +41,10 @@ module adjustment (
     // Next state logic
     always @(*) begin
         case (current_state)
-            IDLE: begin
-                if (start)
-                    next_state = SHIFTING;
-                else
-                    next_state = IDLE;
-            end
-
-            SHIFTING: begin
-                if (mant_work[63:62] == 2'b01)
-                    next_state = DONE_ST;
-                else
-                    next_state = SHIFTING;
-            end
-
-            DONE_ST: begin
-                next_state = IDLE;
-            end
-
+            IDLE: next_state = (start) ? SHIFTING : IDLE;
+            INIT: next_state = SHIFTING;
+            SHIFTING: next_state = (mant_work[63:62] == 2'b01) ? DONE_ST : SHIFTING;
+            DONE_ST: next_state = (recieved) ? IDLE : DONE_ST;
             default: 
                 next_state = IDLE;
         endcase
@@ -69,18 +58,25 @@ module adjustment (
             mant_work   <= 0;
             shift_count <= 0;
             done        <= 0;
+            adj_exp     <= 0;
+            adj_k       <= 0;
+            sign_out    <= 0;
+            init        <= 0;
         end 
         else begin
             case (current_state)
                 IDLE: begin
                     done <= 0;
-                    if (start) begin
-                        scale_out   <= E_raw;
-                        mant_work   <= mant_prod;
-                        shift_count <= 0;
-                        adj_exp     <= 0;
-                        adj_k       <= 0;
-                    end
+                    init <= 0;
+                end
+
+                INIT: begin
+                    scale_out   <= E_raw;
+                    mant_work   <= mant_prod;
+                    shift_count <= 0;
+                    adj_exp     <= 0;
+                    adj_k       <= 0;
+                    init <= 1;
                 end
 
                 SHIFTING: begin
@@ -108,6 +104,7 @@ module adjustment (
                             // No action
                         end
                     endcase
+                    init <= 0;
                 end
 
                 DONE_ST: begin
@@ -116,6 +113,7 @@ module adjustment (
                     adj_exp  <= scale_out[2:0];
                     adj_k    <= scale_out[8:3];
                     sign_out <= sign_in;
+                    init     <= 0;
                 end
 
                 default: begin

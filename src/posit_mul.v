@@ -35,12 +35,14 @@ module posit_mul (
     wire [2:0] adj_exp;
     wire [5:0] adj_k;
     wire sign_out_adj;
+    wire init_adj;
     // Round-off outputs
     wire [31:0] mantissa_rounded;
     wire done_round;
     wire [5:0] k_final;
     wire        sign_final;
     wire [2:0]  exp_final;
+    wire init_round;
     // Controller outputs
     wire adjust_rst_n;
     wire round_rst_n;
@@ -121,6 +123,7 @@ module posit_mul (
         .clk(clk),
         .rst_n(rst_n),
         .load(&decode_done_reg),
+        .recieved(init_adj),
         .A(mantissa_decode_a),
         .B(mantissa_decode_b),
         .done(done_mul),
@@ -136,6 +139,7 @@ module posit_mul (
         .clk(clk),
         .rst_n(rst_n),
         .start(&decode_done_reg),
+        .recieved(init_adj),
         .exp_A(exp_decode_a),
         .exp_B(exp_decode_b),
         .k_A(k_decode_a),
@@ -158,11 +162,13 @@ module posit_mul (
         .E_raw(exp_raw),
         .mant_prod(mantissa_product),
         .sign_in(sign_out_exp),
+        .recieved(init_round),
         .mant_adj(mant_adj),
         .done(done_adj),
         .adj_exp(adj_exp),
         .adj_k(adj_k),
-        .sign_out(sign_out_adj)
+        .sign_out(sign_out_adj),
+        .init(init_adj)
     );
 
     // Round-off: produce final mantissa bits
@@ -174,11 +180,13 @@ module posit_mul (
         .k_out(adj_k),
         .sign_out(sign_out_adj),
         .exp_out(adj_exp),
+        .recieved(),
         .mantissa_out(mantissa_rounded),
         .k_final(k_final),
         .sign_final(sign_final),
         .exp_final(exp_final),
-        .done(done_round)
+        .done(done_round),
+        .init(init_round)
     );
 
     // Posit encoder: pack sign,k,exp,mantissa back to posit
