@@ -119,8 +119,16 @@ always @(posedge clk or negedge rst) begin // active low reset
 			end
 
 			complete_d: begin
-				done  <= 1'b1;
-				state <= (recieved) ? start_d : complete_d;
+			if(recieved) begin
+			state<=start_d;
+			done<=0;
+			   end 
+			else begin
+			done<=1;
+			state<=complete_d;
+			end
+//				done  <= 1'b1;
+//				state <= (recieved) ? start_d : complete_d;
 			end
 
 			default: begin
@@ -132,3 +140,29 @@ always @(posedge clk or negedge rst) begin // active low reset
 end
 
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
