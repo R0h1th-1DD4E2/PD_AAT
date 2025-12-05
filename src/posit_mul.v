@@ -47,11 +47,17 @@ module posit_mul (
     wire adjust_rst_n;
     wire round_rst_n;
     wire encoder_rst_n;
+	 wire bm_rst_n;
+	 wire decoder_rst_n;
     wire [31:0] encoder_result;
     wire [31:0] controller_result;
-    wire encode_done;
+    wire encode_done;// from encoder , to reset all modules.
     wire init_encoder;
     wire controller_done;
+	 
+	 
+	 
+	
 
 
     // consider both done signals from decoders as decoded signals can be ready at different times
@@ -199,6 +205,7 @@ module posit_mul (
         .NAR_B_DE(NAR_decode_b),
         .NAR_EXP_ADDER(NaR_exp),
         .ZERO_EXP_ADDER(zero_out_exp),
+		  .encode_done(encode_done),
         // Encoder data outputs
         .result(controller_result),
         .NAR(NAR),
@@ -207,6 +214,8 @@ module posit_mul (
         .adjust_rst_n(adjust_rst_n),
         .round_rst_n(round_rst_n),
         .encoder_rst_n(encoder_rst_n),
+		  .bm_rst_n(bm_rst_n),
+		  .decoder_rst_n(decoder_rst_n),
         .done(controller_done)
     );
 
@@ -226,3 +235,32 @@ module posit_mul (
         end
     end
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

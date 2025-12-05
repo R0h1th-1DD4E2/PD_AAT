@@ -11,6 +11,8 @@ module controller (
     input  wire NAR_B_DE,
     input  wire NAR_EXP_ADDER,
     input  wire ZERO_EXP_ADDER,
+	 
+	 input wire encode_done,
 
     // Encoder data
     output reg [31:0] result,
@@ -20,6 +22,9 @@ module controller (
     output reg  adjust_rst_n,
     output reg  round_rst_n,
     output reg  encoder_rst_n,
+	 
+    output reg bm_rst_n,//
+	 output reg decoder_rst_n,//
 
     output reg  done
 
@@ -77,9 +82,11 @@ module controller (
     // Output logic
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
-            encoder_rst_n      <= 1'b1;
-            adjust_rst_n       <= 1'b1;
-            round_rst_n        <= 1'b1;
+            encoder_rst_n      <= 1'b0;
+            adjust_rst_n       <= 1'b0;
+            round_rst_n        <= 1'b0;
+				bm_rst_n           <= 1'b0;
+				decoder_rst_n      <= 1'b0;
             done               <= 1'b0;
             ZERO           <= 1'b0;
             NAR           <= 1'b0;
@@ -87,13 +94,27 @@ module controller (
         end else begin 
             case (state)
                 NORMAL_OPERATION: begin
+					 if(encode_done)begin// reset all modules on completion.
+					    encoder_rst_n      <= 1'b0;
+                   adjust_rst_n       <= 1'b0;
+                   round_rst_n        <= 1'b0;
+			        	 bm_rst_n           <= 1'b0;
+				       decoder_rst_n      <= 1'b0;
+						     ZERO           <= 1'b0;
+                        NAR           <= 1'b0;
+					    end
+						 
+						else begin
                     adjust_rst_n <= 1'b1;
                     round_rst_n <= 1'b1;
                     encoder_rst_n <= 1'b1;
+						  bm_rst_n           <= 1'b1;
+				        decoder_rst_n      <= 1'b1;
                     done          <= 1'b0;
                     ZERO           <= 1'b0;
                     NAR           <= 1'b0;
                     result        <= 32'd0;
+						  end
                 end
                 
                 ZERO_DETECTED: begin
@@ -138,3 +159,32 @@ module controller (
     end
 
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

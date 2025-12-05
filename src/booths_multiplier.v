@@ -78,7 +78,7 @@ module booths_multiplier #(parameter N = 32)(
                     Q <= B;
                     ACC <= 0;
                     Q_1 <= 0;
-                    counter <= 5'(N - 1);
+                    counter <= N-5'b1;
                     done <= 0;
                     init <= 1;
                 end
@@ -106,3 +106,31 @@ module booths_multiplier #(parameter N = 32)(
     end
     
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
