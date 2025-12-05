@@ -83,7 +83,7 @@ module posit_mul (
     booths_multiplier #(.N(32)) booths_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .load(done_decode_a & done_decode_b),
+        .load(done_decode_a & done_decode_b), // change to check for variable done signals from decoders
         .A(mantissa_decode_a),
         .B(mantissa_decode_b),
         .done(done_mul),
@@ -97,7 +97,7 @@ module posit_mul (
     ) exp_adder_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .start(start),
+        .start(start), // this is the start of top module and not dependent on done signals of decoders
         .exp_A(exp_decode_a),
         .exp_B(exp_decode_b),
         .k_A(k_decode_a),
@@ -112,7 +112,7 @@ module posit_mul (
     );
 
     // Adjustment module
-    adjustment adjustment_inst (
+    adjustment adjustment_inst ( // have to check the inititalization at reset
         .clk(clk),
         .rst_n(rst_n || adjust_rst_n),
         .start(done_mul),
