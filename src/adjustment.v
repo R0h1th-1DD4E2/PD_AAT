@@ -41,7 +41,7 @@ module adjustment (
     // Next state logic
     always @(*) begin
         case (current_state)
-            IDLE: next_state = (start) ? SHIFTING : IDLE;
+            IDLE: next_state = (start) ? INIT : IDLE;
             INIT: next_state = SHIFTING;
             SHIFTING: next_state = (mant_work[63:62] == 2'b01) ? DONE_ST : SHIFTING;
             DONE_ST: next_state = (recieved) ? IDLE : DONE_ST;
