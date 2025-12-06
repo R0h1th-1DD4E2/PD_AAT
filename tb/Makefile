@@ -61,6 +61,12 @@ booths:
 		TOPLEVEL=booths_multiplier_tb_top \
 		MODULE=test_booths_multiplier
 
+.PHONY: unsigned_multiplier
+unsigned_multiplier:
+	@echo "Running Unsigned Multiplier tests..."
+	iverilog -g2012 -o unsigned_multiplier_tb.vvp $(SRC_DIR)/unsigned_multiplier.v $(TB)/unsigned_multiplier_tb.sv
+	vvp unsigned_multiplier_tb.vvp
+
 # exp_adder testbench
 .PHONY: exp_adder
 exp_adder:

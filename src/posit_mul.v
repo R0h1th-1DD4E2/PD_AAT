@@ -61,7 +61,7 @@ module posit_mul (
 
 
     // consider both done signals from decoders as decoded signals can be ready at different times
-    reg [1:0] decode_done_reg, exp_mul_init_reg;
+    reg [1:0] decode_done_reg;
 
     always @(done_decode_a or done_decode_b or rst_n or init_mul or init_exp) begin
         if (!rst_n) begin
@@ -111,7 +111,7 @@ module posit_mul (
     );
 
     // Booth's multiplier (parameter N = 32)
-    booths_multiplier #(.N(32)) booths_inst (
+    unsigned_multiplier #(.N(32)) unsigned_mul_inst (
         .clk(clk),
         .rst_n(rst_n),
         .load(&decode_done_reg),
@@ -235,32 +235,3 @@ module posit_mul (
         end
     end
 endmodule
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
