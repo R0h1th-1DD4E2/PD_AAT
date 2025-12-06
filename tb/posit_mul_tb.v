@@ -88,40 +88,40 @@ module posit_mul_tb;
         $display("========================================\n");
         
         // Test Case 1: Basic multiplication
-        test_multiply(32'h40000000, 32'h40000000, "1.0 * 1.0");
+        test_multiply(32'h78FC394F, 32'h792AACF5, "66118971.9638 * 89483173.6642");
         
         // Test Case 2: Multiply by 2
-        test_multiply(32'h44000000, 32'h40000000, "2.0 * 1.0");
+        test_multiply(32'h86EC5EB9, 32'h881B3548, "-77400633.5098 * -15885659.8737");
         
         // Test Case 3: Small numbers
-        test_multiply(32'h3c000000, 32'h3c000000, "0.5 * 0.5");
+        test_multiply(32'h88F9C39D, 32'h789E0BD3, "-8592945.6123 * 41430859.0739");
 //        
 //        // Test Case 4: Zero multiplication
-        test_multiply(32'ha448b107, 32'h50bb598a, "-123.45678 * 18.92734");
+        test_multiply(32'h50bb598a, 32'ha448b107, " 18.92734 * -123.45678");
 //        
-//        // Test Case 5: Zero * Zero
-//        test_multiply(32'h00000000, 32'h00000000, "0 * 0");
-//        
-//        // Test Case 6: NAR input A
-//        test_multiply(32'h80000000, 32'h40000000, "NAR * 1.0");
-//        
-//        // Test Case 7: NAR input B
-//        test_multiply(32'h40000000, 32'h80000000, "1.0 * NAR");
-//        
-//        // Test Case 8: NAR * NAR
-//        test_multiply(32'h80000000, 32'h80000000, "NAR * NAR");
+        // Test Case 5: Zero * Zero
+        test_multiply(32'h00000000, 32'h00000000, "0 * 0");
+        
+        // Test Case 6: NAR input A
+        test_multiply(32'h80000000, 32'h40000000, "NAR * 1.0");
+        
+        // Test Case 7: NAR input B
+        test_multiply(32'h40000000, 32'h80000000, "1.0 * NAR");
+        
+        // Test Case 8: NAR * NAR
+        test_multiply(32'h80000000, 32'h80000000, "NAR * NAR");
 //        
 //        // Test Case 9: Negative number multiplication
 //        test_multiply(32'hC0000000, 32'h40000000, "-1.0 * 1.0");
 //        
 //        // Test Case 10: Negative * Negative
-          test_multiply(32'hC0000000, 32'hC0000000, "-1.0 * -1.0");
+ //         test_multiply(32'hC0000000, 32'hC0000000, "-1.0 * -1.0");
 //        
 //        // Test Case 11: Large number multiplication
 //        test_multiply(32'h60000000, 32'h60000000, "4.0 * 4.0");
 //        
 //        // Test Case 12: Mixed magnitude
-         test_multiply(32'h42000000, 32'h3e000000, "1.5 * 0.75");
+   //      test_multiply(32'h42000000, 32'h3e000000, "1.5 * 0.75");
         
         // Add more test cases as needed
         

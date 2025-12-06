@@ -20,10 +20,11 @@ reg [31:0] p_hold;
 
 parameter start_d         = 3'd0;
 parameter sign_d          = 3'd1;
-parameter regime_value_d  = 3'd2;
-parameter es_value_d      = 3'd3;
-parameter mantissa_d      = 3'd4;
-parameter complete_d      = 3'd5;
+parameter left_shift      = 3'd2;
+parameter regime_value_d  = 3'd3;
+parameter es_value_d      = 3'd4;
+parameter mantissa_d      = 3'd5;
+parameter complete_d      = 3'd6;
 
 reg flag1, flag0;
 // reg [5:0] count;
@@ -63,10 +64,24 @@ always @(posedge clk or negedge rst) begin // active low reset
 			end
 
 			sign_d: begin
-				sign   <= p_hold[31];
-				p_hold <= p_hold << 1'b1;
-				state  <= regime_value_d;
+			  if(p_hold[31]) begin
+				sign   <= 1'b1;
+			   p_hold <= (~p_hold) +32'b1;
+				state  <= left_shift;
+				end
+				else begin
+				 sign  <= 1'b0;
+				 p_hold <= p_hold;
+	          state  <= left_shift;			 
+				  end
+				 	
+				
 			end
+			
+			left_shift:begin
+			             p_hold <= p_hold << 1'b1;
+							  state  <= regime_value_d;
+			             end
 
 			regime_value_d: begin
 				// Sequence of 1's followed by terminating 0
@@ -140,3 +155,29 @@ always @(posedge clk or negedge rst) begin // active low reset
 end
 
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

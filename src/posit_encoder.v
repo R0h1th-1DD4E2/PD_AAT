@@ -13,7 +13,7 @@ module posit_encoder(
 
 	reg [2:0] state;
 	reg [5:0] k_mod, k_pos;  // k_mod for k<0, and k_pos for k>=0.
-	parameter start_e = 3'd0, sign_e = 3'd1, regime_value_e = 3'd2, es_value_e = 3'd3, mantissa_e = 3'd4, complete_e = 3'd5;
+	parameter start_e = 3'd0, sign_e = 3'd1, regime_value_e = 3'd2, es_value_e = 3'd3, mantissa_e = 3'd4,sign_check =3'd5, complete_e = 3'd6;
 
 	reg [4:0] index, m_cnt;
 	reg [1:0] es_count;
@@ -62,7 +62,7 @@ module posit_encoder(
 				end
 
 				sign_e: begin
-					p_hold[index] <= sign_reg;
+					p_hold[index] <= 1'b0;
 					state <= regime_value_e;
 					index <= index - 5'd1;
 					init <= 1'b1;
@@ -115,7 +115,7 @@ module posit_encoder(
 				mantissa_e: begin
 					if (index == 0) begin
 						p_hold[index] <= mantissa_out_reg[m_cnt];
-						state <= complete_e;
+						state <= sign_check;
 					end
 					else begin
 						p_hold[index] <= mantissa_out_reg[m_cnt];
@@ -125,6 +125,19 @@ module posit_encoder(
 					end
 					init <= 1'b0;
 				end
+				
+				sign_check: begin
+				             if(sign_reg)begin
+								     p_hold <= (~p_hold) +32'b1;
+									  state <= complete_e;
+								    end
+								 else begin
+								    p_hold <= p_hold;
+									  state <= complete_e;
+								   end
+								 
+				             end
+				
 
 				complete_e: begin
 					done <= 1'b1;
@@ -142,3 +155,25 @@ module posit_encoder(
 	end
 
 endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
