@@ -26,7 +26,7 @@ parameter es_value_d      = 3'd4;
 parameter mantissa_d      = 3'd5;
 parameter complete_d      = 3'd6;
 
-reg flag1, flag0;
+reg flag1, flag0,special;
 // reg [5:0] count;
 
 always @(posedge clk or negedge rst) begin // active low reset
@@ -41,6 +41,7 @@ always @(posedge clk or negedge rst) begin // active low reset
 		done      <= 1'b0;
 		ZERO      <= 1'b0;
 		NAR       <= 1'b0;
+		special   <= 1'b0;
 		// count     <= 6'd0;
 	end else begin
 		case (state)
@@ -59,6 +60,7 @@ always @(posedge clk or negedge rst) begin // active low reset
 					done      <= 1'b0;
 					ZERO      <= 1'b0;
 					NAR       <= 1'b0;
+					special   <= 1'b0;
 					// count     <= 6'd0;
 				end
 			end
@@ -103,15 +105,16 @@ always @(posedge clk or negedge rst) begin // active low reset
 				end else begin
 					// Sequence of 0's followed by terminating 1
 					if (!p_hold[31]) begin
+						if (k < 6'd31) begin 
 						flag0  <= 1'b1;
 						k      <= k + 6'd1;
 						p_hold <= p_hold << 1'b1;
 						state  <= regime_value_d;
 						// count  <= count + 1'b1;
-						if (k == 6'd31) begin // NAR and ZERO decoding
+					   end 
+						else begin// NAR and ZERO decoding
 							state <= complete_d;
-							if (sign) NAR <= 1'b1;
-							else      ZERO <= 1'b1;
+							special<=1'b1;
 						end
 					end else begin
 						k      <= -k;
@@ -134,10 +137,23 @@ always @(posedge clk or negedge rst) begin // active low reset
 			end
 
 			complete_d: begin
-			if(recieved) begin
+			if(special) begin
+			            if (sign) begin
+							NAR <= 1'b1;
+							done<=1;
+							state<=start_d;
+							end
+							else begin    
+							ZERO <= 1'b1;
+							done<=1;
+							state<=start_d;
+							end
+			        end
+			else if(recieved) begin
 			state<=start_d;
 			done<=0;
 			   end 
+			
 			else begin
 			done<=1;
 			state<=complete_d;
