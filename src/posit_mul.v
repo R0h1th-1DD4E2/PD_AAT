@@ -8,8 +8,8 @@ module posit_mul (
     input  wire [31:0] posit_b,
     output reg  [31:0] posit_result,
     output reg         done,
-    output wire        NAR,
-    output wire        ZERO
+    output reg        NAR,
+    output reg        ZERO
 );
     wire sign_a, sign_b;
     wire done_decode_a, done_decode_b;
@@ -54,6 +54,8 @@ module posit_mul (
     wire encode_done;// from encoder , to reset all modules.
     wire init_encoder;
     wire controller_done;
+    wire is_nar;
+    wire is_zero;
 	 
 	 
 	 
@@ -83,7 +85,7 @@ module posit_mul (
         .posit_num(posit_a),
         .start(start),
         .clk(clk),
-        .rst(rst_n),
+        .rst(rst_n) ,
         .recieved(init_mul & init_exp),
         .sign(sign_a),
         .done(done_decode_a),
@@ -113,7 +115,7 @@ module posit_mul (
     // Booth's multiplier (parameter N = 32)
     unsigned_multiplier #(.N(32)) unsigned_mul_inst (
         .clk(clk),
-        .rst_n(rst_n),
+        .rst_n(rst_n & bm_rst_n),
         .load(&decode_done_reg),
         .recieved(init_adj),
         .A(mantissa_decode_a),
@@ -208,8 +210,8 @@ module posit_mul (
 		  .encode_done(encode_done),
         // Encoder data outputs
         .result(controller_result),
-        .NAR(NAR),
-        .ZERO(ZERO),
+        .NAR(is_nar),
+        .ZERO(is_zero),
         // Stage resets
         .adjust_rst_n(adjust_rst_n),
         .round_rst_n(round_rst_n),
@@ -225,12 +227,16 @@ module posit_mul (
             posit_result <= 32'd0;
         end else begin
             // Priority to special cases handled by controller
-            if (NAR | ZERO) begin
+            if (is_nar | is_zero) begin
                 posit_result <= controller_result;
                 done <= controller_done;
+                NAR <= is_nar;
+                ZERO <= is_zero;
             end else begin
                 posit_result <= encoder_result;
                 done <= encode_done;
+                NAR <= 1'b0;
+                ZERO <= 1'b0;
             end
         end
     end

@@ -121,6 +121,8 @@ module controller (
                     adjust_rst_n <= 1'b0;
                     round_rst_n <= 1'b0;
                     encoder_rst_n <= 1'b0;
+					bm_rst_n           <= 1'b0;
+				    decoder_rst_n      <= 1'b0;
                     done          <= 1'b0;
                     ZERO           <= 1'b1;
                     NAR           <= 1'b0;
@@ -130,6 +132,8 @@ module controller (
                     adjust_rst_n <= 1'b0;
                     round_rst_n <= 1'b0;
                     encoder_rst_n <= 1'b0;
+                    bm_rst_n           <= 1'b0;
+                    decoder_rst_n      <= 1'b0;
                     done          <= 1'b0;
                     NAR           <= 1'b1;
                     ZERO           <= 1'b0;
@@ -139,6 +143,8 @@ module controller (
                     adjust_rst_n <= 1'b1;
                     round_rst_n <= 1'b1;
                     encoder_rst_n <= 1'b1;
+                    bm_rst_n           <= 1'b1;
+                    decoder_rst_n      <= 1'b1;
                     done               <= 1'b1;
                     ZERO           <= ZERO;
                     NAR           <= NAR;
@@ -149,6 +155,8 @@ module controller (
                     encoder_rst_n <= 1'b1;
                     adjust_rst_n <= 1'b1;
                     round_rst_n <= 1'b1;
+                    bm_rst_n           <= 1'b1;
+                    decoder_rst_n      <= 1'b1;
                     done               <= 1'b0;
                     ZERO           <= 1'b0;
                     NAR           <= 1'b0;
