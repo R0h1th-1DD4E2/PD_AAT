@@ -12,8 +12,8 @@ on:
   workflow_dispatch:
 
 env:
-  OPENLANE_TAG: 2024.11.18
-  OPENLANE_IMAGE_NAME: efabless/openlane2
+  OPENLANE_TAG: 2.3.1
+  OPENLANE_IMAGE_NAME: ghcr.io/efabless/openlane2
   PDK_ROOT: /home/runner/work/pdk
   DESIGN_NAME: posit_mul
 
