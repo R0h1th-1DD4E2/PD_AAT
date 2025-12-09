@@ -74,6 +74,8 @@ jobs:
         run: |
           cd "$OPENLANE_ROOT"
 
+          make mount
+
           echo "Running OpenLane flow for design: ${DESIGN_NAME}"
           ./flow.tcl -design "${DESIGN_NAME}"
 
