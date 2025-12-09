@@ -1,0 +1,364 @@
+name: OpenLane Physical Design Flow
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  OPENLANE_TAG: 2024.11.18
+  OPENLANE_IMAGE_NAME: efabless/openlane2
+  PDK_ROOT: /home/runner/work/pdk
+  DESIGN_NAME: posit_mul
+
+jobs:
+  physical-design:
+    name: Run OpenLane PD Flow
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker
+        run: |
+          docker --version
+          echo "Docker is ready"
+
+      - name: Pull OpenLane Docker Image
+        run: |
+          docker pull ${{ env.OPENLANE_IMAGE_NAME }}:${{ env.OPENLANE_TAG }}
+
+      - name: Prepare Design Directory
+        run: |
+          mkdir -p openlane_run
+          mkdir -p openlane_run/designs/${{ env.DESIGN_NAME }}
+          
+          # Copy source files
+          cp -r src openlane_run/designs/${{ env.DESIGN_NAME }}/
+          
+          # Copy SDC files
+          cp -r sdc openlane_run/designs/${{ env.DESIGN_NAME }}/
+          
+          # Copy config
+          cp config/config.tcl openlane_run/designs/${{ env.DESIGN_NAME }}/
+          
+          echo "Design directory structure:"
+          tree openlane_run/designs/${{ env.DESIGN_NAME }} || ls -R openlane_run/designs/${{ env.DESIGN_NAME }}
+
+      - name: Run OpenLane Flow
+        id: openlane
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v $(pwd)/openlane_run:/openlane/designs \
+            -v $(pwd)/results:/openlane/designs/${{ env.DESIGN_NAME }}/runs \
+            -e PDK_ROOT=/root/.volare \
+            ${{ env.OPENLANE_IMAGE_NAME }}:${{ env.OPENLANE_TAG }} \
+            --dockerized \
+            --flow Classic \
+            ${{ env.DESIGN_NAME }}
+          
+          echo "OpenLane flow completed with exit code: $?"
+
+      - name: Extract Run Directory
+        id: run_dir
+        if: always()
+        run: |
+          # Find the latest run directory
+          RUN_DIR=$(ls -td openlane_run/designs/${{ env.DESIGN_NAME }}/runs/* 2>/dev/null | head -1)
+          if [ -z "$RUN_DIR" ]; then
+            RUN_DIR=$(ls -td results/* 2>/dev/null | head -1)
+          fi
+          
+          if [ -n "$RUN_DIR" ]; then
+            echo "run_path=$RUN_DIR" >> $GITHUB_OUTPUT
+            echo "run_found=true" >> $GITHUB_OUTPUT
+            echo "Latest run directory: $RUN_DIR"
+            ls -la "$RUN_DIR" || true
+          else
+            echo "run_found=false" >> $GITHUB_OUTPUT
+            echo "Warning: No run directory found"
+          fi
+
+      - name: Generate Reports Summary
+        if: always()
+        run: |
+          REPORT_FILE="PD_SUMMARY.md"
+          echo "# 📊 Physical Design Flow Summary" > $REPORT_FILE
+          echo "" >> $REPORT_FILE
+          echo "**Design:** ${{ env.DESIGN_NAME }}" >> $REPORT_FILE
+          echo "**Date:** $(date -u)" >> $REPORT_FILE
+          echo "**Commit:** ${{ github.sha }}" >> $REPORT_FILE
+          echo "" >> $REPORT_FILE
+          
+          # Check if run path exists
+          if [ "${{ steps.run_dir.outputs.run_found }}" != "true" ]; then
+            echo "## ⚠️ Error" >> $REPORT_FILE
+            echo "" >> $REPORT_FILE
+            echo "Run directory not found. The OpenLane flow may have failed." >> $REPORT_FILE
+            echo "" >> $REPORT_FILE
+            cat $REPORT_FILE
+            exit 0
+          fi
+          
+          RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
+          REPORTS_DIR="$RUN_PATH/reports"
+          RESULTS_DIR="$RUN_PATH/results"
+          
+          # Check if directories exist
+          echo "## 🔍 Run Directory Contents" >> $REPORT_FILE
+          echo '```' >> $REPORT_FILE
+          find "$RUN_PATH" -type f \( -name "*.rpt" -o -name "*.log" \) 2>/dev/null | head -20 >> $REPORT_FILE || true
+          echo '```' >> $REPORT_FILE
+          echo "" >> $REPORT_FILE
+          
+          # Timing Report
+          echo "## ⏱️ Timing Analysis" >> $REPORT_FILE
+          TIMING_RPT=$(find "$RUN_PATH" -type f \( -name "*timing*.rpt" -o -name "sta*.rpt" \) 2>/dev/null | head -1)
+          if [ -f "$TIMING_RPT" ]; then
+            echo '```' >> $REPORT_FILE
+            head -50 "$TIMING_RPT" >> $REPORT_FILE
+            echo '```' >> $REPORT_FILE
+          else
+            echo "⚠️ Timing report not found" >> $REPORT_FILE
+          fi
+          echo "" >> $REPORT_FILE
+          
+          # Area Report
+          echo "## 📐 Area Report" >> $REPORT_FILE
+          AREA_RPT=$(find "$RUN_PATH" -type f \( -name "*area*.rpt" -o -name "*synthesis*.rpt" \) 2>/dev/null | head -1)
+          if [ -f "$AREA_RPT" ]; then
+            echo '```' >> $REPORT_FILE
+            head -50 "$AREA_RPT" >> $REPORT_FILE
+            echo '```' >> $REPORT_FILE
+          else
+            echo "⚠️ Area report not found" >> $REPORT_FILE
+          fi
+          echo "" >> $REPORT_FILE
+          
+          # Power Report
+          echo "## ⚡ Power Analysis" >> $REPORT_FILE
+          POWER_RPT=$(find "$RUN_PATH" -type f -name "*power*.rpt" 2>/dev/null | head -1)
+          if [ -f "$POWER_RPT" ]; then
+            echo '```' >> $REPORT_FILE
+            head -50 "$POWER_RPT" >> $REPORT_FILE
+            echo '```' >> $REPORT_FILE
+          else
+            echo "⚠️ Power report not found" >> $REPORT_FILE
+          fi
+          echo "" >> $REPORT_FILE
+          
+          # DRC Report
+          echo "## 🔬 DRC Violations" >> $REPORT_FILE
+          DRC_RPT=$(find "$RUN_PATH" -type f \( -name "*drc*.rpt" -o -name "*violations*.rpt" \) 2>/dev/null | head -1)
+          if [ -f "$DRC_RPT" ]; then
+            echo '```' >> $REPORT_FILE
+            head -50 "$DRC_RPT" >> $REPORT_FILE
+            echo '```' >> $REPORT_FILE
+          else
+            echo "✅ No DRC report found (may indicate clean run)" >> $REPORT_FILE
+          fi
+          echo "" >> $REPORT_FILE
+          
+          cat $REPORT_FILE
+
+      - name: Find GDS File
+        if: always()
+        id: find_gds
+        run: |
+          # Check if RUN_PATH is valid
+          if [ "${{ steps.run_dir.outputs.run_found }}" != "true" ]; then
+            echo "gds_found=false" >> $GITHUB_OUTPUT
+            echo "No run directory, skipping GDS search"
+            exit 0
+          fi
+          
+          RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
+          
+          # Search for GDS file
+          GDS_FILE=$(find "$RUN_PATH" -type f \( -name "*.gds" -o -name "*.gds.gz" \) 2>/dev/null | head -1)
+          
+          if [ -n "$GDS_FILE" ]; then
+            echo "gds_found=true" >> $GITHUB_OUTPUT
+            echo "gds_path=$GDS_FILE" >> $GITHUB_OUTPUT
+            echo "GDS file found: $GDS_FILE"
+            ls -lh "$GDS_FILE"
+            
+            # Calculate hash for 3D viewer
+            if [[ "$GDS_FILE" == *.gz ]]; then
+              GDS_HASH=$(gunzip -c "$GDS_FILE" | sha256sum | cut -d' ' -f1)
+            else
+              GDS_HASH=$(sha256sum "$GDS_FILE" | cut -d' ' -f1)
+            fi
+            echo "gds_hash=$GDS_HASH" >> $GITHUB_OUTPUT
+            echo "GDS hash: $GDS_HASH"
+          else
+            echo "gds_found=false" >> $GITHUB_OUTPUT
+            echo "⚠️ GDS file not found"
+          fi
+
+      - name: Create 3D Viewer Link
+        if: always() && steps.find_gds.outputs.gds_found == 'true'
+        run: |
+          echo "" >> PD_SUMMARY.md
+          echo "## 🎨 3D GDS Viewer" >> PD_SUMMARY.md
+          echo "" >> PD_SUMMARY.md
+          echo "View your design in 3D using TinyTapeout's GDS viewer:" >> PD_SUMMARY.md
+          echo "" >> PD_SUMMARY.md
+          
+          # Create viewer link (note: this works best when GDS is publicly accessible)
+          VIEWER_URL="https://gds-viewer.tinytapeout.com/?model=https://github.com/${{ github.repository }}/releases/download/latest/${{ env.DESIGN_NAME }}.gds"
+          echo "🔗 [Open 3D Viewer]($VIEWER_URL)" >> PD_SUMMARY.md
+          echo "" >> PD_SUMMARY.md
+          echo "_Note: For the 3D viewer to work, the GDS file must be publicly accessible. Consider uploading it as a release asset._" >> PD_SUMMARY.md
+          echo "" >> PD_SUMMARY.md
+          
+          cat PD_SUMMARY.md
+
+      - name: Collect All Reports
+        if: always()
+        run: |
+          mkdir -p artifacts/reports
+          mkdir -p artifacts/results
+          mkdir -p artifacts/logs
+          
+          # Only collect if RUN_PATH exists
+          if [ "${{ steps.run_dir.outputs.run_found }}" = "true" ]; then
+            RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
+            
+            # Copy reports
+            find "$RUN_PATH" -type f -name "*.rpt" -exec cp {} artifacts/reports/ \; 2>/dev/null || true
+            
+            # Copy key result files
+            find "$RUN_PATH" -type f -name "*.def" -exec cp {} artifacts/results/ \; 2>/dev/null || true
+            find "$RUN_PATH" -type f -name "*.lef" -exec cp {} artifacts/results/ \; 2>/dev/null || true
+            find "$RUN_PATH" -type f -name "*.v" -exec cp {} artifacts/results/ \; 2>/dev/null || true
+            find "$RUN_PATH" -type f -name "*.sdf" -exec cp {} artifacts/results/ \; 2>/dev/null || true
+            find "$RUN_PATH" -type f -name "*.spef" -exec cp {} artifacts/results/ \; 2>/dev/null || true
+            
+            # Copy GDS if found
+            if [ "${{ steps.find_gds.outputs.gds_found }}" = "true" ]; then
+              GDS_PATH="${{ steps.find_gds.outputs.gds_path }}"
+              cp "$GDS_PATH" artifacts/results/
+            fi
+            
+            # Copy logs
+            find "$RUN_PATH" -type f -name "*.log" -exec cp {} artifacts/logs/ \; 2>/dev/null || true
+          fi
+          
+          # Copy summary
+          cp PD_SUMMARY.md artifacts/ 2>/dev/null || true
+          
+          echo "Artifacts collected:"
+          ls -R artifacts/ || echo "No artifacts found"
+
+      - name: Upload PD Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd-reports
+          path: artifacts/reports/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload PD Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd-results
+          path: artifacts/results/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload PD Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd-logs
+          path: artifacts/logs/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload Summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd-summary
+          path: PD_SUMMARY.md
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload GDS File
+        if: always() && steps.find_gds.outputs.gds_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gds-file
+          path: ${{ steps.find_gds.outputs.gds_path }}
+          retention-days: 90
+
+      - name: Comment PR with Summary
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let summary = '';
+            try {
+              summary = fs.readFileSync('PD_SUMMARY.md', 'utf8');
+            } catch (error) {
+              summary = '⚠️ Physical Design flow encountered issues. Check the logs for details.';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Create Release with GDS (on tag)
+        if: startsWith(github.ref, 'refs/tags/') && steps.find_gds.outputs.gds_found == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.find_gds.outputs.gds_path }}
+            artifacts/reports/*
+            PD_SUMMARY.md
+          body: |
+            ## Physical Design Release
+            
+            This release contains the GDSII file and reports from the OpenLane PD flow.
+            
+            View in 3D: https://gds-viewer.tinytapeout.com/?model=https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ env.DESIGN_NAME }}.gds
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Final Status
+        if: always()
+        run: |
+          echo "======================================"
+          echo "Physical Design Flow Complete"
+          echo "======================================"
+          echo "Check the artifacts for:"
+          echo "  📊 Timing, Area, Power reports"
+          echo "  📐 DEF, LEF files"
+          echo "  🎨 GDS file (if successful)"
+          echo "  📝 Complete logs"
+          echo "======================================"
+          
+          if [ "${{ steps.openlane.outcome }}" == "success" ]; then
+            echo "✅ OpenLane flow completed successfully!"
+            exit 0
+          else
+            echo "⚠️ OpenLane flow had issues - check logs"
+            exit 1
+          fi
