@@ -9,12 +9,18 @@ on:
 
 env:
   DESIGN_NAME: posit_mul
+
   # OpenLane v1 container from The-OpenROAD-Project
   OPENLANE_IMAGE: ghcr.io/the-openroad-project/openlane
-  # Pin to a known tag/sha for reproducibility; you can change this later
+  # Pin to specific tag/sha
   OPENLANE_TAG: ff5509f65b17bfa4068d5336495ab1718987ff69
+
   RUN_BASE: openlane_runs
   RUN_TAG: github_ci
+
+  # 🔧 PDK configuration (adjust if needed)
+  PDK: sky130A
+  STD_CELL_LIBRARY: sky130_fd_sc_hd
 
 jobs:
   physical-design:
@@ -36,16 +42,12 @@ jobs:
 
       - name: Prepare OpenLane design directory
         run: |
-          # Create a design directory layout that OpenLane likes:
-          #   openlane_work/
-          #     config.tcl
-          #     src/   (your RTL)
-          #     sdc/   (your constraints)
-          mkdir -p openlane_work
+          # Design directory must match top-level name: posit_mul
+          mkdir -p openlane_work/"${DESIGN_NAME}"
 
-          cp -r src openlane_work/
-          cp -r sdc openlane_work/
-          cp config/config.tcl openlane_work/config.tcl
+          cp -r src openlane_work/"${DESIGN_NAME}"/
+          cp -r sdc openlane_work/"${DESIGN_NAME}"/
+          cp config/config.tcl openlane_work/"${DESIGN_NAME}"/config.tcl
 
           echo "OpenLane design directory structure:"
           tree openlane_work || ls -R openlane_work
@@ -56,6 +58,7 @@ jobs:
         run: |
           RUN_BASE="${RUN_BASE}"
           RUN_TAG="${RUN_TAG}"
+          DESIGN_DIR="/project/openlane_work/${DESIGN_NAME}"
 
           # All outputs will land under: $PWD/${RUN_BASE}/${RUN_TAG}
           mkdir -p "${RUN_BASE}"
@@ -64,13 +67,16 @@ jobs:
           docker run --rm \
             -v "$PWD":/project \
             -w /openlane \
+            -e PDK="${PDK}" \
+            -e PDK_ROOT="/build/pdk" \
+            -e STD_CELL_LIBRARY="${STD_CELL_LIBRARY}" \
             "${OPENLANE_IMAGE}:${OPENLANE_TAG}" \
             bash -lc "
               set -e
-              echo \"Using design at /project/openlane_work\"
+              echo \"Using design at ${DESIGN_DIR}\"
               echo \"Run base: /project/${RUN_BASE}, tag: ${RUN_TAG}\"
               ./flow.tcl -overwrite \
-                -design /project/openlane_work \
+                -design ${DESIGN_DIR} \
                 -run_path /project/${RUN_BASE} \
                 -tag ${RUN_TAG}
             "
@@ -120,14 +126,12 @@ jobs:
 
           echo "Using RUN_PATH=${RUN_PATH}" 
 
-          # List some key files
           echo "## 🔍 Run Directory Contents" >> "$REPORT_FILE"
           echo '```' >> "$REPORT_FILE"
           find "$RUN_PATH" -type f \( -name "*.rpt" -o -name "*.log" \) 2>/dev/null | head -40 >> "$REPORT_FILE" || true
           echo '```' >> "$REPORT_FILE"
           echo "" >> "$REPORT_FILE"
 
-          # Timing report
           echo "## ⏱️ Timing Analysis" >> "$REPORT_FILE"
           TIMING_RPT=$(find "$RUN_PATH" -type f \( -name "*timing*.rpt" -o -name "sta*.rpt" -o -name "signoff*.rpt" \) 2>/dev/null | head -1)
           if [ -f "$TIMING_RPT" ]; then
@@ -142,7 +146,6 @@ jobs:
           fi
           echo "" >> "$REPORT_FILE"
 
-          # Area report
           echo "## 📐 Area Report" >> "$REPORT_FILE"
           AREA_RPT=$(find "$RUN_PATH" -type f \( -name "*area*.rpt" -o -name "*synthesis*.rpt" \) 2>/dev/null | head -1)
           if [ -f "$AREA_RPT" ]; then
@@ -157,7 +160,6 @@ jobs:
           fi
           echo "" >> "$REPORT_FILE"
 
-          # Power report
           echo "## ⚡ Power Analysis" >> "$REPORT_FILE"
           POWER_RPT=$(find "$RUN_PATH" -type f -name "*power*.rpt" 2>/dev/null | head -1)
           if [ -f "$POWER_RPT" ]; then
@@ -172,7 +174,6 @@ jobs:
           fi
           echo "" >> "$REPORT_FILE"
 
-          # DRC report
           echo "## 🔬 DRC Violations" >> "$REPORT_FILE"
           DRC_RPT=$(find "$RUN_PATH" -type f \( -name "*drc*.rpt" -o -name "*violations*.rpt" \) 2>/dev/null | head -1)
           if [ -f "$DRC_RPT" ]; then
@@ -200,7 +201,6 @@ jobs:
           fi
 
           RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
-
           GDS_FILE=$(find "$RUN_PATH" -type f \( -name "*.gds" -o -name "*.gds.gz" \) 2>/dev/null | head -1)
 
           if [ -n "$GDS_FILE" ]; then
@@ -230,7 +230,6 @@ jobs:
           echo "View your design in 3D using TinyTapeout's GDS viewer:" >> PD_SUMMARY.md
           echo "" >> PD_SUMMARY.md
 
-          # Note: this assumes you later upload ${DESIGN_NAME}.gds as a release asset (see 'Create Release' step).
           VIEWER_URL="https://gds-viewer.tinytapeout.com/?model=https://github.com/${{ github.repository }}/releases/download/latest/${{ env.DESIGN_NAME }}.gds"
           echo "🔗 [Open 3D Viewer](${VIEWER_URL})" >> PD_SUMMARY.md
           echo "" >> PD_SUMMARY.md
@@ -247,10 +246,8 @@ jobs:
           if [ "${{ steps.run_dir.outputs.run_found }}" = "true" ]; then
             RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
 
-            # Reports
             find "$RUN_PATH" -type f -name "*.rpt" -exec cp {} artifacts/reports/ \; 2>/dev/null || true
 
-            # Key result files (DEF/LEF/netlist/SDF/SPEF/GDS)
             find "$RUN_PATH" -type f -name "*.def"  -exec cp {} artifacts/results/ \; 2>/dev/null || true
             find "$RUN_PATH" -type f -name "*.lef"  -exec cp {} artifacts/results/ \; 2>/dev/null || true
             find "$RUN_PATH" -type f -name "*.v"    -exec cp {} artifacts/results/ \; 2>/dev/null || true
@@ -261,11 +258,9 @@ jobs:
               cp "${{ steps.find_gds.outputs.gds_path }}" artifacts/results/
             fi
 
-            # Logs
             find "$RUN_PATH" -type f -name "*.log" -exec cp {} artifacts/logs/ \; 2>/dev/null || true
           fi
 
-          # Summary
           cp PD_SUMMARY.md artifacts/ 2>/dev/null || true
 
           echo "Artifacts collected:"
@@ -369,4 +364,3 @@ jobs:
           else
             echo "⚠️ OpenLane flow had issues - check artifacts/logs"
             exit 1
-          fi
