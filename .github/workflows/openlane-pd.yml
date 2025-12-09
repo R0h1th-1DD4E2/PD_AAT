@@ -9,18 +9,7 @@ on:
 
 env:
   DESIGN_NAME: posit_mul
-
-  # OpenLane v1 container from The-OpenROAD-Project
-  OPENLANE_IMAGE: ghcr.io/the-openroad-project/openlane
-  # Pin to specific tag/sha
-  OPENLANE_TAG: ff5509f65b17bfa4068d5336495ab1718987ff69
-
-  RUN_BASE: openlane_runs
-  RUN_TAG: github_ci
-
-  # 🔧 PDK configuration (adjust if needed)
-  PDK: sky130A
-  STD_CELL_LIBRARY: sky130_fd_sc_hd
+  OPENLANE_ROOT: $HOME/OpenLane
 
 jobs:
   physical-design:
@@ -28,74 +17,91 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout design repository
         uses: actions/checkout@v4
 
-      - name: Show Docker info
+      - name: Install dependencies (Docker, Python, make, etc.)
         run: |
+          sudo apt-get update -y
+          # ubuntu-latest already has docker, python, git, make,
+          # but we install what OpenLane short-install mentions.
+          sudo apt-get install -y --no-install-recommends \
+            python3 python3-venv python3-pip make git ca-certificates
+
           docker --version
-          echo "Docker is available."
+          python3 --version
+          make --version
+          git --version
 
-      - name: Pull OpenLane Docker Image
+      - name: Clone OpenLane repository
         run: |
-          docker pull "${OPENLANE_IMAGE}:${OPENLANE_TAG}"
+          cd "$HOME"
+          git clone https://github.com/The-OpenROAD-Project/OpenLane
+          cd OpenLane
+          # Optional: checkout a specific tag/commit if you want repeatability
+          # git checkout <tag-or-commit>
+          ls
 
-      - name: Prepare OpenLane design directory
+      - name: Build OpenLane (make)
         run: |
-          # Design directory must match top-level name: posit_mul
-          mkdir -p designs/"${DESIGN_NAME}"
+          cd "$HOME/OpenLane"
+          # This will build/download tools & PDKs as per OpenLane's makefile
+          make
+          # NOTE: 'make test' is recommended in docs, but is heavy for CI.
+          # If you really want it, uncomment:
+          # make test
 
-          cp -r src designs/"${DESIGN_NAME}"/
-          cp -r sdc designs/"${DESIGN_NAME}"/
-          cp config/config.tcl designs/"${DESIGN_NAME}"/config.tcl
-          echo "OpenLane design directory structure:"
-          tree designs/"${DESIGN_NAME}" || ls -R designs/"${DESIGN_NAME}"
+      - name: Prepare OpenLane design directory (designs/posit_mul)
+        run: |
+          DESIGN_DIR="$OPENLANE_ROOT/designs/${DESIGN_NAME}"
+          mkdir -p "${DESIGN_DIR}/src"
 
-      - name: Run OpenLane Flow (inside container)
+          # Copy your RTL
+          cp src/*.v "${DESIGN_DIR}/src/"
+
+          # Copy SDC into src as you specified (posit_mul.sdc)
+          cp sdc/posit_mul.sdc "${DESIGN_DIR}/src/"
+
+          # Copy your OpenLane config
+          cp config/config.tcl "${DESIGN_DIR}/config.tcl"
+
+          echo "Design directory structure inside OpenLane:"
+          tree "${DESIGN_DIR}" || ls -R "${DESIGN_DIR}"
+
+      - name: Run OpenLane flow.tcl for posit_mul
         id: openlane_run
         continue-on-error: true
         run: |
-          RUN_BASE="${RUN_BASE}"
-          RUN_TAG="${RUN_TAG}"
-          DESIGN_DIR="/designs/${DESIGN_NAME}"
+          cd "$OPENLANE_ROOT"
 
-          # All outputs will land under: $PWD/${RUN_BASE}/${RUN_TAG}
-          mkdir -p "${RUN_BASE}"
-
-          echo "Launching OpenLane container..."
-          docker run --rm \
-            -v "$PWD":/project \
-            -w /openlane \
-            -e PDK="${PDK}" \
-            -e PDK_ROOT="/build/pdk" \
-            -e STD_CELL_LIBRARY="${STD_CELL_LIBRARY}" \
-            "${OPENLANE_IMAGE}:${OPENLANE_TAG}" \
-            bash -lc "
-              set -e
-              echo \"Using design at ${DESIGN_DIR}\"
-              echo \"Run base: /project/${RUN_BASE}, tag: ${RUN_TAG}\"
-              ./flow.tcl -overwrite \
-                -design ${DESIGN_DIR} \
-                -run_path /project/${RUN_BASE} \
-                -tag ${RUN_TAG}
-            "
+          echo "Running OpenLane flow for design: ${DESIGN_NAME}"
+          ./flow.tcl -design "${DESIGN_NAME}"
 
           EXIT_CODE=$?
           echo "OpenLane flow exit code: ${EXIT_CODE}"
           exit "${EXIT_CODE}"
 
-      - name: Expose run directory path
+      - name: Locate latest run directory
         id: run_dir
         if: always()
         run: |
-          RUN_DIR="${RUN_BASE}/${RUN_TAG}"
-          if [ -d "${RUN_DIR}" ]; then
-            echo "Run directory found: ${RUN_DIR}"
+          DESIGN_DIR="$OPENLANE_ROOT/designs/${DESIGN_NAME}"
+          RUNS_DIR="${DESIGN_DIR}/runs"
+
+          if [ -d "${RUNS_DIR}" ]; then
+            # Pick most recent run directory
+            RUN_DIR=$(ls -td "${RUNS_DIR}"/RUN_* 2>/dev/null | head -1 || true)
+          else
+            RUN_DIR=""
+          fi
+
+          if [ -n "${RUN_DIR}" ] && [ -d "${RUN_DIR}" ]; then
+            echo "Latest run directory: ${RUN_DIR}"
             echo "run_found=true" >> "$GITHUB_OUTPUT"
             echo "run_path=${RUN_DIR}" >> "$GITHUB_OUTPUT"
             ls -la "${RUN_DIR}" || true
           else
-            echo "Run directory NOT found at ${RUN_DIR}"
+            echo "No run directory found in ${RUNS_DIR}"
             echo "run_found=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -113,17 +119,14 @@ jobs:
           if [ "${{ steps.run_dir.outputs.run_found }}" != "true" ]; then
             echo "## ⚠️ Error" >> "$REPORT_FILE"
             echo "" >> "$REPORT_FILE"
-            echo "Run directory not found. The OpenLane flow may have failed to start." >> "$REPORT_FILE"
+            echo "Run directory not found. The OpenLane flow may have failed." >> "$REPORT_FILE"
             echo "" >> "$REPORT_FILE"
             cat "$REPORT_FILE"
             exit 0
           fi
 
           RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
-          REPORTS_DIR="${RUN_PATH}/reports"
-          RESULTS_DIR="${RUN_PATH}/results"
-
-          echo "Using RUN_PATH=${RUN_PATH}" 
+          echo "Using RUN_PATH=${RUN_PATH}"
 
           echo "## 🔍 Run Directory Contents" >> "$REPORT_FILE"
           echo '```' >> "$REPORT_FILE"
@@ -229,6 +232,7 @@ jobs:
           echo "View your design in 3D using TinyTapeout's GDS viewer:" >> PD_SUMMARY.md
           echo "" >> PD_SUMMARY.md
 
+          # This assumes you'll upload ${DESIGN_NAME}.gds as a release asset.
           VIEWER_URL="https://gds-viewer.tinytapeout.com/?model=https://github.com/${{ github.repository }}/releases/download/latest/${{ env.DESIGN_NAME }}.gds"
           echo "🔗 [Open 3D Viewer](${VIEWER_URL})" >> PD_SUMMARY.md
           echo "" >> PD_SUMMARY.md
@@ -245,8 +249,10 @@ jobs:
           if [ "${{ steps.run_dir.outputs.run_found }}" = "true" ]; then
             RUN_PATH="${{ steps.run_dir.outputs.run_path }}"
 
+            # Reports
             find "$RUN_PATH" -type f -name "*.rpt" -exec cp {} artifacts/reports/ \; 2>/dev/null || true
 
+            # Key result files (DEF/LEF/netlist/SDF/SPEF/GDS)
             find "$RUN_PATH" -type f -name "*.def"  -exec cp {} artifacts/results/ \; 2>/dev/null || true
             find "$RUN_PATH" -type f -name "*.lef"  -exec cp {} artifacts/results/ \; 2>/dev/null || true
             find "$RUN_PATH" -type f -name "*.v"    -exec cp {} artifacts/results/ \; 2>/dev/null || true
@@ -257,9 +263,11 @@ jobs:
               cp "${{ steps.find_gds.outputs.gds_path }}" artifacts/results/
             fi
 
+            # Logs
             find "$RUN_PATH" -type f -name "*.log" -exec cp {} artifacts/logs/ \; 2>/dev/null || true
           fi
 
+          # Summary
           cp PD_SUMMARY.md artifacts/ 2>/dev/null || true
 
           echo "Artifacts collected:"
