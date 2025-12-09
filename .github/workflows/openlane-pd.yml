@@ -31,6 +31,8 @@ jobs:
       - name: Set up Docker
         run: |
           docker --version
+          # Add user to docker group to run without sudo
+          sudo usermod -aG docker $USER || true
           echo "Docker is ready"
 
       - name: Pull OpenLane Docker Image
@@ -39,33 +41,33 @@ jobs:
 
       - name: Prepare Design Directory
         run: |
-          mkdir -p openlane_run
-          mkdir -p openlane_run/designs/${{ env.DESIGN_NAME }}
+          mkdir -p design
           
           # Copy source files
-          cp -r src openlane_run/designs/${{ env.DESIGN_NAME }}/
+          cp -r src design/
           
           # Copy SDC files
-          cp -r sdc openlane_run/designs/${{ env.DESIGN_NAME }}/
+          cp -r sdc design/
           
           # Copy config
-          cp config/config.tcl openlane_run/designs/${{ env.DESIGN_NAME }}/
+          cp config/config.tcl design/
           
           echo "Design directory structure:"
-          tree openlane_run/designs/${{ env.DESIGN_NAME }} || ls -R openlane_run/designs/${{ env.DESIGN_NAME }}
+          tree design || ls -R design
+
+      - name: Install OpenLane Python Package
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install openlane==2.3.1
 
       - name: Run OpenLane Flow
         id: openlane
         continue-on-error: true
         run: |
-          docker run --rm \
-            -v $(pwd)/openlane_run:/openlane/designs \
-            -v $(pwd)/results:/openlane/designs/${{ env.DESIGN_NAME }}/runs \
-            -e PDK_ROOT=/root/.volare \
-            ${{ env.OPENLANE_IMAGE_NAME }}:${{ env.OPENLANE_TAG }} \
-            --dockerized \
-            --flow Classic \
-            ${{ env.DESIGN_NAME }}
+          cd design
+          
+          # Run OpenLane with dockerized mode
+          python3 -m openlane --dockerized config.tcl
           
           echo "OpenLane flow completed with exit code: $?"
 
@@ -74,10 +76,7 @@ jobs:
         if: always()
         run: |
           # Find the latest run directory
-          RUN_DIR=$(ls -td openlane_run/designs/${{ env.DESIGN_NAME }}/runs/* 2>/dev/null | head -1)
-          if [ -z "$RUN_DIR" ]; then
-            RUN_DIR=$(ls -td results/* 2>/dev/null | head -1)
-          fi
+          RUN_DIR=$(ls -td design/runs/* 2>/dev/null | head -1)
           
           if [ -n "$RUN_DIR" ]; then
             echo "run_path=$RUN_DIR" >> $GITHUB_OUTPUT
