@@ -43,14 +43,13 @@ jobs:
       - name: Prepare OpenLane design directory
         run: |
           # Design directory must match top-level name: posit_mul
-          mkdir -p openlane_work/"${DESIGN_NAME}"
+          mkdir -p designs/"${DESIGN_NAME}"
 
-          cp -r src openlane_work/"${DESIGN_NAME}"/
-          cp -r sdc openlane_work/"${DESIGN_NAME}"/
-          cp config/config.tcl openlane_work/"${DESIGN_NAME}"/config.tcl
-
+          cp -r src designs/"${DESIGN_NAME}"/
+          cp -r sdc designs/"${DESIGN_NAME}"/
+          cp config/config.tcl designs/"${DESIGN_NAME}"/config.tcl
           echo "OpenLane design directory structure:"
-          tree openlane_work || ls -R openlane_work
+          tree designs/"${DESIGN_NAME}" || ls -R designs/"${DESIGN_NAME}"
 
       - name: Run OpenLane Flow (inside container)
         id: openlane_run
@@ -58,7 +57,7 @@ jobs:
         run: |
           RUN_BASE="${RUN_BASE}"
           RUN_TAG="${RUN_TAG}"
-          DESIGN_DIR="/project/openlane_work/${DESIGN_NAME}"
+          DESIGN_DIR="/designs/${DESIGN_NAME}"
 
           # All outputs will land under: $PWD/${RUN_BASE}/${RUN_TAG}
           mkdir -p "${RUN_BASE}"
