@@ -63,10 +63,10 @@ module round_off (
             temp         <= 32'b0;
             nbt          <= 6'd0;
             done         <= 1'b0;
-            ext          <=0;
-            k_final      <=0;
-            sign_final   <=0;
-            exp_final    <=0;
+            ext          <= 32'd0;
+            k_final      <= 6'd0;
+            sign_final   <= 1'b0;
+            exp_final    <= 3'd0;
             init        <= 1'b0;
         
         end else begin
@@ -74,10 +74,10 @@ module round_off (
                 IDLE: begin
                     done         <= 1'b0;
                     mantissa_out <= mantissa_out;
-				    ext          <=0;
-					k_final      <=0;
-                    sign_final   <=0;
-                    exp_final    <=0;
+				    ext          <= 32'd0;
+					k_final      <= 6'd0;
+                    sign_final   <= 1'b0;
+                    exp_final    <= 3'd0;
                     init         <= 1'b0;
                 end
 
@@ -85,10 +85,10 @@ module round_off (
                     mantissa_out <= 32'b0;           // initialize output
                     nbt          <= (!k_sign) ? (6'd26 - k_out) : (6'd27 - k_abs);
                     temp         <= 32'hFFFF_FFFF;   // all ones
-					ext          <=0;
-					k_final      <=0;
-                    sign_final   <=0;
-                    exp_final    <=0;
+					ext          <= 32'd0;
+					k_final      <= 6'd0;
+                    sign_final   <= 1'b0;
+                    exp_final    <= 3'd0;
                     init         <= 1'b1;
                 end
 
@@ -123,23 +123,3 @@ module round_off (
     end
 
 endmodule
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

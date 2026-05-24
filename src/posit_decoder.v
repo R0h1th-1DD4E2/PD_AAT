@@ -66,24 +66,22 @@ always @(posedge clk or negedge rst) begin // active low reset
 			end
 
 			sign_d: begin
-			  if(p_hold[31]) begin
-				sign   <= 1'b1;
-			   p_hold <= (~p_hold) +32'b1;
-				state  <= left_shift;
+				if(p_hold[31]) begin
+					sign   <= 1'b1;
+					p_hold <= (~p_hold) + 32'b1;
+					state  <= left_shift;
 				end
 				else begin
-				 sign  <= 1'b0;
-				 p_hold <= p_hold;
-	          state  <= left_shift;			 
-				  end
-				 	
-				
+					sign  <= 1'b0;
+					p_hold <= p_hold;
+					state  <= left_shift;			 
+				end
 			end
 			
 			left_shift:begin
-			             p_hold <= p_hold << 1'b1;
-							  state  <= regime_value_d;
-			             end
+				p_hold <= p_hold << 1'b1;
+				state  <= regime_value_d;
+			end
 
 			regime_value_d: begin
 				// Sequence of 1's followed by terminating 0
@@ -137,27 +135,26 @@ always @(posedge clk or negedge rst) begin // active low reset
 			end
 
 			complete_d: begin
-			if(special) begin
-			            if (sign) begin
-							NAR <= 1'b1;
-							done<=1;
-							state<=start_d;
-							end
-							else begin    
-							ZERO <= 1'b1;
-							done<=1;
-							state<=start_d;
-							end
-			        end
-			else if(recieved) begin
-			state<=start_d;
-			done<=0;
-			   end 
-			
-			else begin
-			done<=1;
-			state<=complete_d;
-			end
+				if(special) begin
+					if (sign) begin
+						NAR <= 1'b1;
+						done<=1;
+						state<=start_d;
+						end
+						else begin    
+						ZERO <= 1'b1;
+						done<=1;
+						state<=start_d;
+					end
+			    end
+				else if(recieved) begin
+					state<=start_d;
+					done<=0;
+				end 
+				else begin
+					done<=1;
+					state<=complete_d;
+				end
 //				done  <= 1'b1;
 //				state <= (recieved) ? start_d : complete_d;
 			end
@@ -171,29 +168,3 @@ always @(posedge clk or negedge rst) begin // active low reset
 end
 
 endmodule
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

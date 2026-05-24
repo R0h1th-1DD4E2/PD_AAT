@@ -155,25 +155,3 @@ module posit_encoder(
 	end
 
 endmodule
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

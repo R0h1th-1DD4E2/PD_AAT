@@ -54,6 +54,7 @@ posit_decoder dut1(
     start,
     clk,
     rst,
+    recieved,
     sign,
     done,
     ZERO,
@@ -143,38 +144,3 @@ initial begin
     $dumpvars(0, posit_decoder_tb);
 end
 endmodule
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
