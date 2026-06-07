@@ -373,3 +373,4 @@ jobs:
           else
             echo "⚠️ OpenLane flow had issues - check artifacts/logs"
             exit 1
+          fi
