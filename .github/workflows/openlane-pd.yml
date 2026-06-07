@@ -74,7 +74,7 @@ jobs:
         run: |
           cd "$OPENLANE_ROOT"
 
-          if grep -qE '^mount:' Makefile; then
+          if grep -qE '^[[:space:]]*mount:' Makefile; then
             make mount
           else
             echo "No 'mount' target in OpenLane Makefile; proceeding without make mount."
