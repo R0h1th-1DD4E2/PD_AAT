@@ -74,7 +74,11 @@ jobs:
         run: |
           cd "$OPENLANE_ROOT"
 
-          make mount
+          if grep -qE '^mount:' Makefile; then
+            make mount
+          else
+            echo "No 'mount' target in OpenLane Makefile; proceeding without make mount."
+          fi
 
           echo "Running OpenLane flow for design: ${DESIGN_NAME}"
           ./flow.tcl -design "${DESIGN_NAME}"
